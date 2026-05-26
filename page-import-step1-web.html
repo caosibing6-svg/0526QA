@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导入文档 - 网页文件 - LegendAI</title>
+<style>
+:root {
+  --primary: #006eff;
+  --primary-light: #e8f2ff;
+  --primary-hover: #0056d6;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --border: #e5e8ed;
+  --text: #1d2129;
+  --text-secondary: #606a7a;
+  --text-muted: #a0a7b3;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.15);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: 0.2s ease;
+  --danger: #e34d59;
+  --danger-light: #fef0f0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: rgba(0,0,0,0.45);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 4px;
+}
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dialog-title .help-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.dialog-title .help-icon:hover { background: var(--primary-light); color: var(--primary); }
+.dialog-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.dialog-close:hover { background: var(--bg); color: var(--text); }
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 24px 20px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.step.active { color: var(--primary); font-weight: 500; }
+.step .step-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid currentColor;
+}
+.step.active .step-number {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 12px;
+  max-width: 60px;
+}
+
+.dialog-body {
+  padding: 0 24px 24px;
+}
+
+/* Document type */
+.doc-type-group {
+  margin-bottom: 20px;
+}
+.doc-type-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.doc-type-options {
+  display: flex;
+  gap: 10px;
+}
+.doc-type-option {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+}
+.doc-type-option:hover { border-color: var(--primary); color: var(--primary); }
+.doc-type-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+.doc-type-option .type-icon { font-size: 22px; }
+
+/* Upload mode */
+.upload-mode-group {
+  margin-bottom: 16px;
+}
+.upload-mode-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.mode-options {
+  display: flex;
+  gap: 10px;
+}
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+.mode-option:hover { border-color: var(--primary); color: var(--primary); }
+.mode-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* URL Input Section */
+.url-section {
+  margin-bottom: 20px;
+}
+.url-counter {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.url-counter .count-num { color: var(--primary); font-weight: 500; }
+.url-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.url-input-row .url-index {
+  font-size: 13px;
+  color: var(--text-muted);
+  min-width: 24px;
+}
+.url-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+}
+.url-input:focus { border-color: var(--primary); }
+.url-input::placeholder { color: var(--text-muted); }
+.url-input.error { border-color: var(--danger); }
+.url-row-actions {
+  display: flex;
+  gap: 4px;
+}
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.btn-icon:hover { background: var(--bg); color: var(--text); }
+.btn-icon.danger:hover { background: var(--danger-light); color: var(--danger); }
+.btn-add-url {
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.btn-add-url:hover { color: var(--primary-hover); }
+
+/* Update frequency */
+.freq-group {
+  margin-bottom: 20px;
+}
+.freq-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.freq-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.freq-option {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+.freq-option:hover { border-color: var(--primary); color: var(--primary); }
+.freq-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Crawl depth */
+.crawl-group {
+  margin-bottom: 20px;
+}
+.crawl-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 8px;
+}
+.crawl-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  width: 120px;
+}
+.crawl-select:focus { border-color: var(--primary); }
+
+/* Advanced settings */
+.advanced-toggle {
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  user-select: none;
+}
+.advanced-toggle:hover { color: var(--primary-hover); }
+.advanced-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+.advanced-toggle.open .arrow { transform: rotate(90deg); }
+.advanced-content {
+  display: none;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+.advanced-content.show { display: block; }
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+.form-row:last-child { margin-bottom: 0; }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.form-group .label-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.form-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+.form-select:focus { border-color: var(--primary); }
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 400;
+}
+.radio-group input[type="radio"] {
+  accent-color: var(--primary);
+}
+.tag-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.add-tag-link {
+  color: var(--primary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.add-tag-link:hover { color: var(--primary-hover); }
+.tag-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tag-pill {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-pill .tag-remove { cursor: pointer; font-size: 11px; opacity: 0.6; }
+.tag-pill .tag-remove:hover { opacity: 1; }
+
+/* Batch upload */
+.batch-textarea {
+  width: 100%;
+  height: 120px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.8;
+}
+.batch-textarea:focus { border-color: var(--primary); }
+.batch-textarea::placeholder { color: var(--text-muted); }
+.batch-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Footer */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+}
+.btn-cancel {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.btn-cancel:hover { border-color: var(--primary); color: var(--primary); }
+.btn-next {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.btn-next:hover { background: var(--primary-hover); }
+.btn-next:disabled {
+  background: #c4d8f5;
+  cursor: not-allowed;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="dialog-overlay">
+  <div class="dialog" role="dialog" aria-label="导入文档 - 网页文件">
+    <div class="dialog-header">
+      <div class="dialog-title">
+        导入文档
+        <span class="help-icon" title="查看帮助">?</span>
+      </div>
+      <button class="dialog-close" onclick="closeDialog()">✕</button>
+    </div>
+
+    <div class="steps">
+      <div class="step active">
+        <span class="step-number">1</span>
+        <span>选择文档</span>
+      </div>
+      <span class="step-line"></span>
+      <div class="step">
+        <span class="step-number">2</span>
+        <span>设置文档切分</span>
+      </div>
+    </div>
+
+    <div class="dialog-body">
+      <!-- Document Type -->
+      <div class="doc-type-group">
+        <label>文档类型</label>
+        <div class="doc-type-options">
+          <div class="doc-type-option" onclick="switchDocType('local')" id="type-local">
+            <span class="type-icon">📄</span>
+            <span>本地文档</span>
+          </div>
+          <div class="doc-type-option active" onclick="switchDocType('web')" id="type-web">
+            <span class="type-icon">🌐</span>
+            <span>网页文件</span>
+          </div>
+          <div class="doc-type-option" onclick="switchDocType('cos')" id="type-cos">
+            <span class="type-icon">☁️</span>
+            <span>腾讯云对象存储(COS)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Mode -->
+      <div class="upload-mode-group">
+        <label>上传方式</label>
+        <div class="mode-options">
+          <div class="mode-option active" onclick="switchMode('single')" id="mode-single">逐条上传</div>
+          <div class="mode-option" onclick="switchMode('batch')" id="mode-batch">批量上传</div>
+        </div>
+      </div>
+
+      <!-- URL Inputs (Single Mode) -->
+      <div class="url-section" id="singleUrlSection">
+        <div class="url-counter">添加网址 <span class="count-num" id="urlCount">1</span>/20</div>
+        <div id="urlInputs">
+          <div class="url-input-row" data-index="0">
+            <span class="url-index">1.</span>
+            <input type="url" class="url-input" placeholder="请输入网页地址，如 https://example.com" oninput="validateUrls()">
+            <div class="url-row-actions">
+              <button class="btn-icon danger" onclick="removeUrlRow(this)" title="删除">🗑</button>
+            </div>
+          </div>
+        </div>
+        <span class="btn-add-url" onclick="addUrlRow()" id="btnAddUrl">+ 添加网址</span>
+      </div>
+
+      <!-- Batch Textarea (Batch Mode) -->
+      <div class="url-section" id="batchUrlSection" style="display:none;">
+        <textarea class="batch-textarea" id="batchTextarea" placeholder="请输入网页地址，每行一个，最多20个&#10;例如：&#10;https://example.com/doc1&#10;https://example.com/doc2&#10;https://example.com/doc3" oninput="validateUrls()"></textarea>
+        <div class="batch-hint">每行输入一个网址，最多支持 20 个网址</div>
+      </div>
+
+      <!-- Update Frequency -->
+      <div class="freq-group">
+        <label>更新频率</label>
+        <div class="freq-options">
+          <span class="freq-option active" onclick="selectFreq(this)">不更新</span>
+          <span class="freq-option" onclick="selectFreq(this)">每日更新</span>
+          <span class="freq-option" onclick="selectFreq(this)">每3日更新</span>
+          <span class="freq-option" onclick="selectFreq(this)">每7日更新</span>
+          <span class="freq-option" onclick="selectFreq(this)">每30日更新</span>
+        </div>
+      </div>
+
+      <!-- Crawl Depth -->
+      <div class="crawl-group">
+        <label>抓取深度</label>
+        <select class="crawl-select">
+          <option value="1">1级</option>
+          <option value="2">2级</option>
+          <option value="3">3级</option>
+        </select>
+      </div>
+
+      <!-- Advanced Settings -->
+      <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
+        <span class="arrow">▶</span> 高级设置
+      </div>
+      <div class="advanced-content" id="advancedContent">
+        <div class="form-row">
+          <div class="form-group">
+            <label>生效范围</label>
+            <select class="form-select">
+              <option>全部</option>
+              <option>指定应用</option>
+              <option>指定场景</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>网页标签 <span class="label-desc">（可选）</span></label>
+            <div class="tag-input-group">
+              <select class="form-select">
+                <option>标签1</option>
+                <option>标签2</option>
+              </select>
+              <span class="add-tag-link" onclick="addTag()">+ 添加标签</span>
+            </div>
+            <div class="tag-pills" id="tagPills"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>切割方式</label>
+            <div class="radio-group">
+              <label><input type="radio" name="splitMode" checked> 默认切分</label>
+              <label><input type="radio" name="splitMode"> 自定义切分</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button class="btn-cancel" onclick="closeDialog()">取消</button>
+      <button class="btn-next" id="btnNext" disabled onclick="goToStep2()">下一步</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let urlCount = 1;
+let maxUrls = 20;
+
+function switchDocType(type) {
+  if (type === 'local') {
+    window.location.href = 'page-import-step1.html';
+  } else if (type === 'cos') {
+    showToast('COS模式开发中...');
+  }
+}
+
+function switchMode(mode) {
+  document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+  
+  if (mode === 'single') {
+    document.getElementById('singleUrlSection').style.display = 'block';
+    document.getElementById('batchUrlSection').style.display = 'none';
+  } else {
+    document.getElementById('singleUrlSection').style.display = 'none';
+    document.getElementById('batchUrlSection').style.display = 'block';
+  }
+  validateUrls();
+}
+
+function addUrlRow() {
+  if (urlCount >= maxUrls) {
+    showToast('最多只能添加 20 个网址');
+    return;
+  }
+  urlCount++;
+  document.getElementById('urlCount').textContent = urlCount;
+  
+  const container = document.getElementById('urlInputs');
+  const row = document.createElement('div');
+  row.className = 'url-input-row';
+  row.setAttribute('data-index', urlCount - 1);
+  row.innerHTML = `
+    <span class="url-index">${urlCount}.</span>
+    <input type="url" class="url-input" placeholder="请输入网页地址，如 https://example.com" oninput="validateUrls()">
+    <div class="url-row-actions">
+      <button class="btn-icon danger" onclick="removeUrlRow(this)" title="删除">🗑</button>
+    </div>
+  `;
+  container.appendChild(row);
+  
+  if (urlCount >= maxUrls) {
+    document.getElementById('btnAddUrl').style.display = 'none';
+  }
+  
+  // Focus new input
+  setTimeout(() => row.querySelector('.url-input').focus(), 100);
+}
+
+function removeUrlRow(btn) {
+  if (urlCount <= 1) return;
+  const row = btn.closest('.url-input-row');
+  row.remove();
+  urlCount--;
+  document.getElementById('urlCount').textContent = urlCount;
+  
+  // Re-index
+  document.querySelectorAll('#urlInputs .url-input-row').forEach((r, i) => {
+    r.setAttribute('data-index', i);
+    r.querySelector('.url-index').textContent = (i + 1) + '.';
+  });
+  
+  document.getElementById('btnAddUrl').style.display = '';
+  validateUrls();
+}
+
+function selectFreq(el) {
+  document.querySelectorAll('.freq-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function validateUrls() {
+  const btn = document.getElementById('btnNext');
+  const isBatch = document.getElementById('batchUrlSection').style.display !== 'none';
+  
+  if (isBatch) {
+    const text = document.getElementById('batchTextarea').value.trim();
+    const lines = text.split('\n').filter(l => l.trim());
+    btn.disabled = lines.length === 0;
+  } else {
+    const inputs = document.querySelectorAll('#singleUrlSection .url-input');
+    const hasValid = Array.from(inputs).some(inp => inp.value.trim());
+    btn.disabled = !hasValid;
+  }
+}
+
+function toggleAdvanced() {
+  const toggle = document.getElementById('advancedToggle');
+  const content = document.getElementById('advancedContent');
+  toggle.classList.toggle('open');
+  content.classList.toggle('show');
+}
+
+function addTag() {
+  const name = prompt('请输入标签名称：');
+  if (name && name.trim()) {
+    const pills = document.getElementById('tagPills');
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.innerHTML = `${name.trim()} <span class="tag-remove" onclick="this.parentElement.remove()">✕</span>`;
+    pills.appendChild(pill);
+  }
+}
+
+function goToStep2() {
+  window.location.href = 'page-import-step2.html';
+}
+
+function closeDialog() {
+  if (window.opener) {
+    window.close();
+  } else {
+    window.location.href = 'page-main.html';
+  }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+</script>
+
+</body>
+</html>

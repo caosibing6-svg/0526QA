@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导入文档 - LegendAI</title>
+<style>
+:root {
+  --primary: #006eff;
+  --primary-light: #e8f2ff;
+  --primary-hover: #0056d6;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --border: #e5e8ed;
+  --text: #1d2129;
+  --text-secondary: #606a7a;
+  --text-muted: #a0a7b3;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.15);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: 0.2s ease;
+  --success: #00b365;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: rgba(0,0,0,0.45);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 4px;
+}
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dialog-title .help-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.dialog-title .help-icon:hover { background: var(--primary-light); color: var(--primary); }
+.dialog-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.dialog-close:hover { background: var(--bg); color: var(--text); }
+
+/* Steps */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 24px 20px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.step.active { color: var(--primary); font-weight: 500; }
+.step.done { color: var(--success); }
+.step .step-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid currentColor;
+}
+.step.active .step-number {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.step.done .step-number {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 12px;
+  max-width: 60px;
+}
+.step-line.active { background: var(--primary); }
+
+/* Body */
+.dialog-body {
+  padding: 0 24px 24px;
+}
+
+/* Document type selector */
+.doc-type-group {
+  margin-bottom: 20px;
+}
+.doc-type-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.doc-type-options {
+  display: flex;
+  gap: 10px;
+}
+.doc-type-option {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+}
+.doc-type-option:hover { border-color: var(--primary); color: var(--primary); }
+.doc-type-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+.doc-type-option .type-icon { font-size: 22px; }
+
+/* Upload area */
+.upload-area {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--bg);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 12px;
+}
+.upload-area:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.upload-area .upload-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+.upload-area .upload-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.upload-area .upload-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.upload-area .upload-link {
+  color: var(--primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.upload-area .upload-link:hover { text-decoration: underline; }
+
+/* Format info */
+.format-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.format-info strong { color: var(--text-secondary); }
+
+/* File list */
+.file-list {
+  margin-bottom: 16px;
+  display: none;
+}
+.file-list.show { display: block; }
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.file-item .file-icon { font-size: 18px; }
+.file-item .file-name { flex: 1; color: var(--text); }
+.file-item .file-size { color: var(--text-muted); font-size: 12px; }
+.file-item .file-status { color: var(--success); font-size: 12px; }
+.file-item .file-remove {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.file-item .file-remove:hover { color: #e34d59; background: #fef0f0; }
+
+/* Progress */
+.progress-bar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Advanced settings */
+.advanced-toggle {
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  user-select: none;
+}
+.advanced-toggle:hover { color: var(--primary-hover); }
+.advanced-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+.advanced-toggle.open .arrow { transform: rotate(90deg); }
+.advanced-content {
+  display: none;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+.advanced-content.show { display: block; }
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+.form-row:last-child { margin-bottom: 0; }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.form-group .label-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.form-input {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  min-width: 120px;
+}
+.form-input:focus { border-color: var(--primary); }
+.form-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+.form-select:focus { border-color: var(--primary); }
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 400;
+}
+.radio-group input[type="radio"] {
+  accent-color: var(--primary);
+}
+.tag-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.add-tag-link {
+  color: var(--primary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.add-tag-link:hover { color: var(--primary-hover); }
+.tag-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tag-pill {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-pill .tag-remove { cursor: pointer; font-size: 11px; opacity: 0.6; }
+.tag-pill .tag-remove:hover { opacity: 1; }
+
+/* Footer */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+}
+.btn-cancel {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.btn-cancel:hover { border-color: var(--primary); color: var(--primary); }
+.btn-next {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.btn-next:hover { background: var(--primary-hover); }
+.btn-next:disabled {
+  background: #c4d8f5;
+  cursor: not-allowed;
+}
+.btn-prev {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.btn-prev:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="dialog-overlay">
+  <div class="dialog" role="dialog" aria-label="导入文档">
+    <!-- Header -->
+    <div class="dialog-header">
+      <div class="dialog-title">
+        导入文档
+        <span class="help-icon" title="查看帮助">?</span>
+      </div>
+      <button class="dialog-close" onclick="closeDialog()">✕</button>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step active">
+        <span class="step-number">1</span>
+        <span>选择文档</span>
+      </div>
+      <span class="step-line"></span>
+      <div class="step">
+        <span class="step-number">2</span>
+        <span>设置文档切分</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="dialog-body">
+      <!-- Document Type -->
+      <div class="doc-type-group">
+        <label>文档类型</label>
+        <div class="doc-type-options">
+          <div class="doc-type-option active" onclick="switchDocType('local')" id="type-local">
+            <span class="type-icon">📄</span>
+            <span>本地文档</span>
+          </div>
+          <div class="doc-type-option" onclick="switchDocType('web')" id="type-web">
+            <span class="type-icon">🌐</span>
+            <span>网页文件</span>
+          </div>
+          <div class="doc-type-option" onclick="switchDocType('cos')" id="type-cos">
+            <span class="type-icon">☁️</span>
+            <span>腾讯云对象存储(COS)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Area (Local Mode) -->
+      <div id="upload-section">
+        <div class="upload-area" id="upload-area" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">将文件拖拽到此处，或<span class="upload-link">点击上传</span></div>
+          <div class="upload-hint">支持单文件上传，文件大小不超过 200MB</div>
+        </div>
+        <input type="file" id="fileInput" style="display:none" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.html,.md,.csv" onchange="handleFileSelect(event)">
+
+        <!-- File List -->
+        <div class="file-list" id="fileList"></div>
+
+        <!-- Format Info -->
+        <div class="format-info">
+          <strong>支持的文件格式：</strong>PDF, Word (.doc/.docx), Excel (.xls/.xlsx), 文本(.txt), 网页(.html/.htm), Markdown (.md), CSV (.csv), 以及主流代码文件；单个文档不超过 200MB
+        </div>
+      </div>
+
+      <!-- Advanced Settings -->
+      <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
+        <span class="arrow">▶</span> 高级设置
+      </div>
+      <div class="advanced-content" id="advancedContent">
+        <div class="form-row">
+          <div class="form-group">
+            <label>生效范围</label>
+            <select class="form-select">
+              <option>全部</option>
+              <option>指定应用</option>
+              <option>指定场景</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>文档标签 <span class="label-desc">（可选）</span></label>
+            <div class="tag-input-group">
+              <select class="form-select">
+                <option>标签1</option>
+                <option>标签2</option>
+              </select>
+              <span class="add-tag-link" onclick="addTag()">+ 添加标签</span>
+            </div>
+            <div class="tag-pills" id="tagPills"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>切割方式</label>
+            <div class="radio-group">
+              <label><input type="radio" name="splitMode" checked> 默认切分</label>
+              <label><input type="radio" name="splitMode"> 自定义切分</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="dialog-footer">
+      <button class="btn-cancel" onclick="closeDialog()">取消</button>
+      <button class="btn-next" id="btnNext" onclick="goToStep2()">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedFiles = [];
+
+function switchDocType(type) {
+  document.querySelectorAll('.doc-type-option').forEach(o => o.classList.remove('active'));
+  document.getElementById('type-' + type).classList.add('active');
+  if (type === 'web') {
+    window.location.href = 'page-import-step1-web.html';
+  } else if (type === 'cos') {
+    showToast('COS模式开发中...');
+  }
+  updateNextButton();
+}
+
+function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  files.forEach(f => {
+    if (!selectedFiles.find(sf => sf.name === f.name)) {
+      selectedFiles.push(f);
+    }
+  });
+  renderFileList();
+  updateNextButton();
+}
+
+function renderFileList() {
+  const list = document.getElementById('fileList');
+  if (selectedFiles.length === 0) {
+    list.classList.remove('show');
+    return;
+  }
+  list.classList.add('show');
+  list.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-item">
+      <span class="file-icon">📄</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${formatSize(f.size)}</span>
+      <span class="file-status">✓ 已就绪</span>
+      <button class="file-remove" onclick="removeFile(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+  updateNextButton();
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function updateNextButton() {
+  const btn = document.getElementById('btnNext');
+  btn.disabled = selectedFiles.length === 0;
+}
+
+function toggleAdvanced() {
+  const toggle = document.getElementById('advancedToggle');
+  const content = document.getElementById('advancedContent');
+  toggle.classList.toggle('open');
+  content.classList.toggle('show');
+}
+
+function addTag() {
+  const name = prompt('请输入标签名称：');
+  if (name && name.trim()) {
+    const pills = document.getElementById('tagPills');
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.innerHTML = `${name.trim()} <span class="tag-remove" onclick="this.parentElement.remove()">✕</span>`;
+    pills.appendChild(pill);
+  }
+}
+
+function goToStep2() {
+  if (selectedFiles.length === 0) return;
+  window.location.href = 'page-import-step2.html';
+}
+
+function closeDialog() {
+  if (window.opener) {
+    window.close();
+  } else {
+    window.location.href = 'page-main.html';
+  }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// Drag and drop
+const uploadArea = document.getElementById('upload-area');
+uploadArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--primary)';
+  uploadArea.style.background = 'var(--primary-light)';
+});
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.style.borderColor = 'var(--border)';
+  uploadArea.style.background = 'var(--bg)';
+});
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--border)';
+  uploadArea.style.background = 'var(--bg)';
+  const files = Array.from(e.dataTransfer.files);
+  files.forEach(f => {
+    if (!selectedFiles.find(sf => sf.name === f.name)) {
+      selectedFiles.push(f);
+    }
+  });
+  renderFileList();
+  updateNextButton();
+});
+</script>
+
+</body>
+</html>

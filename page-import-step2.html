@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设置文档切分 - LegendAI</title>
+<style>
+:root {
+  --primary: #006eff;
+  --primary-light: #e8f2ff;
+  --primary-hover: #0056d6;
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --border: #e5e8ed;
+  --text: #1d2129;
+  --text-secondary: #606a7a;
+  --text-muted: #a0a7b3;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.15);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: 0.2s ease;
+  --success: #00b365;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: rgba(0,0,0,0.45);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 720px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 4px;
+}
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dialog-title .help-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.dialog-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.dialog-close:hover { background: var(--bg); color: var(--text); }
+
+/* Steps */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 24px 20px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.step.done { color: var(--success); }
+.step.active { color: var(--primary); font-weight: 500; }
+.step .step-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid currentColor;
+}
+.step.done .step-number {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+.step.active .step-number {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 12px;
+  max-width: 60px;
+}
+.step-line.done { background: var(--success); }
+
+/* Body */
+.dialog-body {
+  padding: 0 24px 24px;
+}
+
+/* Section */
+.section {
+  margin-bottom: 24px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-title .section-icon {
+  font-size: 16px;
+}
+
+/* Split options */
+.split-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.split-option {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
+}
+.split-option:hover { border-color: var(--primary); }
+.split-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.split-option .radio-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: var(--transition);
+}
+.split-option.active .radio-dot {
+  border-color: var(--primary);
+}
+.split-option.active .radio-dot::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  margin: 3px;
+}
+.split-option-content { flex: 1; }
+.split-option-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.split-option-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.split-option.active .split-option-title { color: var(--primary); }
+
+/* Custom input area */
+.custom-config {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  display: none;
+}
+.custom-config.show { display: block; }
+.custom-config .form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.custom-config .form-row:last-child { margin-bottom: 0; }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.form-input {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  width: 120px;
+}
+.form-input:focus { border-color: var(--primary); }
+.form-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+.form-select:focus { border-color: var(--primary); }
+
+/* Slice format */
+.slice-format-group {
+  margin-bottom: 20px;
+}
+.slice-format-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.format-options {
+  display: flex;
+  gap: 10px;
+}
+.format-option {
+  padding: 8px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  background: var(--surface);
+}
+.format-option:hover { border-color: var(--primary); color: var(--primary); }
+.format-option.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Preview */
+.preview-section {
+  margin-bottom: 20px;
+}
+.preview-section label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  margin-bottom: 10px;
+}
+.preview-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.preview-chunk {
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--primary);
+}
+.preview-chunk:last-child { margin-bottom: 0; }
+.preview-chunk .chunk-label {
+  font-size: 11px;
+  color: var(--primary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.preview-chunk .chunk-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Divider */
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* Footer */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+}
+.btn-cancel {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.btn-cancel:hover { border-color: var(--primary); color: var(--primary); }
+.btn-prev {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.btn-prev:hover { border-color: var(--primary); color: var(--primary); }
+.btn-import {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-import:hover { background: var(--primary-hover); }
+.btn-import .spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+.btn-import.loading .spinner { display: block; }
+.btn-import.loading .btn-text { opacity: 0.7; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Success state */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.success-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.success-dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  width: 380px;
+}
+.success-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+  background: #e6f7ee;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--success);
+}
+.success-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.success-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.success-btn {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.success-btn:hover { background: var(--primary-hover); }
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="dialog-overlay">
+  <div class="dialog" role="dialog" aria-label="设置文档切分">
+    <div class="dialog-header">
+      <div class="dialog-title">
+        导入文档
+        <span class="help-icon" title="查看帮助">?</span>
+      </div>
+      <button class="dialog-close" onclick="closeDialog()">✕</button>
+    </div>
+
+    <div class="steps">
+      <div class="step done">
+        <span class="step-number">✓</span>
+        <span>选择文档</span>
+      </div>
+      <span class="step-line done"></span>
+      <div class="step active">
+        <span class="step-number">2</span>
+        <span>设置文档切分</span>
+      </div>
+    </div>
+
+    <div class="dialog-body">
+      <!-- Table Document Split -->
+      <div class="section" id="tableSplitSection">
+        <div class="section-title">
+          <span class="section-icon">📊</span>
+          表格文档切分方式
+        </div>
+        <div class="split-options">
+          <div class="split-option active" onclick="selectTableSplit('default')" id="table-default">
+            <div class="radio-dot"></div>
+            <div class="split-option-content">
+              <div class="split-option-title">默认切分</div>
+              <div class="split-option-desc">自动识别表格结构，按行切分为独立的片段，保留表头信息</div>
+            </div>
+          </div>
+          <div class="split-option" onclick="selectTableSplit('row')" id="table-row">
+            <div class="radio-dot"></div>
+            <div class="split-option-content">
+              <div class="split-option-title">按行切分</div>
+              <div class="split-option-desc">将表格按每行切分为独立片段，适合问答场景下的精确检索</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- Other Document Split -->
+      <div class="section" id="docSplitSection">
+        <div class="section-title">
+          <span class="section-icon">📝</span>
+          其他文档切分方式
+        </div>
+        <div class="split-options">
+          <div class="split-option active" onclick="selectDocSplit('default')" id="doc-default">
+            <div class="radio-dot"></div>
+            <div class="split-option-content">
+              <div class="split-option-title">默认切分</div>
+              <div class="split-option-desc">智能识别文档结构（标题、段落），自动按语义切分为合适大小的片段</div>
+            </div>
+          </div>
+          <div class="split-option" onclick="selectDocSplit('general')" id="doc-general">
+            <div class="radio-dot"></div>
+            <div class="split-option-content">
+              <div class="split-option-title">通用标识符切分</div>
+              <div class="split-option-desc">按自定义标识符（如换行、句号等）切分文档，灵活控制切分粒度</div>
+            </div>
+          </div>
+          <div class="split-option" onclick="selectDocSplit('parent')" id="doc-parent">
+            <div class="radio-dot"></div>
+            <div class="split-option-content">
+              <div class="split-option-title">父子级标识符切分</div>
+              <div class="split-option-desc">使用两级标识符切分，适用于有层级结构的文档，保留上下文关联</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom config for general identifier -->
+        <div class="custom-config" id="customGeneral">
+          <div class="form-row">
+            <div class="form-group">
+              <label>切分标识符</label>
+              <select class="form-select">
+                <option>\n\n (双换行)</option>
+                <option>\n (单换行)</option>
+                <option>。 (句号)</option>
+                <option>.</option>
+                <option>自定义</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>最大分片长度 (字符)</label>
+              <input type="number" class="form-input" value="1000" min="100" max="5000">
+            </div>
+            <div class="form-group">
+              <label>重叠长度 (字符)</label>
+              <input type="number" class="form-input" value="100" min="0" max="500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom config for parent-child -->
+        <div class="custom-config" id="customParent">
+          <div class="form-row">
+            <div class="form-group">
+              <label>父级标识符</label>
+              <select class="form-select">
+                <option>## (Markdown H2)</option>
+                <option># (Markdown H1)</option>
+                <option>### (Markdown H3)</option>
+                <option>自定义</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>子级标识符</label>
+              <select class="form-select">
+                <option>\n\n (双换行)</option>
+                <option>\n (单换行)</option>
+                <option>。 (句号)</option>
+                <option>自定义</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>最大分片长度 (字符)</label>
+              <input type="number" class="form-input" value="2000" min="100" max="5000">
+            </div>
+            <div class="form-group">
+              <label>重叠长度 (字符)</label>
+              <input type="number" class="form-input" value="200" min="0" max="500">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- Slice Format -->
+      <div class="slice-format-group">
+        <label>切片格式</label>
+        <div class="format-options">
+          <span class="format-option active" onclick="selectFormat('markdown', this)">Markdown 格式</span>
+          <span class="format-option" onclick="selectFormat('html', this)">HTML 格式</span>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="preview-section">
+        <label>切分预览</label>
+        <div class="preview-box" id="previewBox">
+          <div class="preview-chunk">
+            <div class="chunk-label">分片 1</div>
+            <div class="chunk-text">这是一段示例文本，展示默认切分方式下文档的处理效果。系统会自动识别文档结构并按照语义进行合理的切分...</div>
+          </div>
+          <div class="preview-chunk">
+            <div class="chunk-label">分片 2</div>
+            <div class="chunk-text">每个分片将保持适当的长度，确保知识检索的准确性和召回率。相邻分片之间会有一定重叠，避免语义断裂...</div>
+          </div>
+          <div class="preview-chunk">
+            <div class="chunk-label">分片 3</div>
+            <div class="chunk-text">切分后的文档片段将用于后续的向量化处理和知识检索，为用户提供精准的问答服务...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="dialog-footer">
+      <button class="btn-cancel" onclick="closeDialog()">取消</button>
+      <button class="btn-prev" onclick="goBack()">上一步</button>
+      <button class="btn-import" id="btnImport" onclick="doImport()">
+        <span class="spinner"></span>
+        <span class="btn-text">导入文档</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-dialog">
+    <div class="success-icon">✓</div>
+    <div class="success-title">文档导入成功</div>
+    <div class="success-desc">文档已成功导入知识库，正在后台进行解析和向量化处理，预计 1-3 分钟完成。</div>
+    <button class="success-btn" onclick="backToMain()">返回文档列表</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function selectTableSplit(mode) {
+  document.querySelectorAll('#tableSplitSection .split-option').forEach(o => o.classList.remove('active'));
+  document.getElementById('table-' + mode).classList.add('active');
+  updatePreview();
+}
+
+function selectDocSplit(mode) {
+  document.querySelectorAll('#docSplitSection .split-option').forEach(o => o.classList.remove('active'));
+  document.getElementById('doc-' + mode).classList.add('active');
+  
+  // Show/hide custom config panels
+  document.getElementById('customGeneral').classList.toggle('show', mode === 'general');
+  document.getElementById('customParent').classList.toggle('show', mode === 'parent');
+  updatePreview();
+}
+
+function selectFormat(format, el) {
+  document.querySelectorAll('.format-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  updatePreview();
+}
+
+function updatePreview() {
+  const previewBox = document.getElementById('previewBox');
+  const docMode = document.querySelector('#docSplitSection .split-option.active').id.replace('doc-', '');
+  const format = document.querySelector('.format-option.active').textContent.trim();
+  
+  let chunks = [];
+  if (docMode === 'default') {
+    chunks = [
+      { label: '分片 1', text: '智能识别文档的标题层级和段落结构，按照语义自动对文档进行切分，每个分片保持合适的大小。这种切分方式适用于大多数通用文档。' },
+      { label: '分片 2', text: '保留原文的格式和结构信息，确保分片内容的完整性和上下文连贯性。相邻分片之间自动保留一定重叠。' },
+      { label: '分片 3', text: '最终输出的切片格式为 ' + format + '，方便后续的向量化处理和语义检索。' },
+    ];
+  } else if (docMode === 'general') {
+    chunks = [
+      { label: '分片 1', text: '按照指定的标识符对文档进行切分。这种方式可以精确控制切分的位置和粒度。' },
+      { label: '分片 2', text: '每个分片长度不超过设定的最大值，通过重叠机制保持语义的连续性。' },
+      { label: '分片 3', text: '适合对文档结构有特定要求的场景，如代码文档、技术规范等。' },
+    ];
+  } else if (docMode === 'parent') {
+    chunks = [
+      { label: '父级分片 | 介绍', text: '父级标识符将文档按大章节切分，每个父级分片包含一个完整的章节主题。' },
+      { label: '子级分片 | 介绍-1', text: '子级标识符在父级基础上进一步细分，每个子级分片是父级分片的组成部分。' },
+      { label: '子级分片 | 介绍-2', text: '这种层级结构能保留文档的上下文关系，检索时优先返回最相关的子级分片。' },
+    ];
+  }
+  
+  previewBox.innerHTML = chunks.map(c => `
+    <div class="preview-chunk">
+      <div class="chunk-label">${c.label}</div>
+      <div class="chunk-text">${c.text}</div>
+    </div>
+  `).join('');
+}
+
+function doImport() {
+  const btn = document.getElementById('btnImport');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  
+  // Simulate import process
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    document.getElementById('successOverlay').classList.add('show');
+  }, 2000);
+}
+
+function goBack() {
+  // Determine which step 1 to go back to
+  window.history.back();
+}
+
+function closeDialog() {
+  if (window.opener) {
+    window.close();
+  } else {
+    window.location.href = 'page-main.html';
+  }
+}
+
+function backToMain() {
+  if (window.opener) {
+    window.opener.location.reload();
+    window.close();
+  } else {
+    window.location.href = 'page-main.html';
+  }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+</script>
+
+</body>
+</html>
