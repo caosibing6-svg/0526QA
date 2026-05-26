@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA库管理 - LegendAI</title>
+<style>
+:root {
+  --primary: #4F6EF7;
+  --primary-dark: #3D5CE0;
+  --primary-light: #EEF0FF;
+  --accent: #00B8D9;
+  --accent2: #7C4DFF;
+  --bg: #F7F8FA;
+  --card-bg: #FFFFFF;
+  --text: #1A1D2B;
+  --text-secondary: #6B7280;
+  --border: #E2E8F0;
+  --card-radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.08), 0 12px 40px rgba(79,110,247,0.1);
+  --danger: #EF4444;
+  --danger-light: #FEE2E2;
+  --success: #10B981;
+  --success-light: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-light: #FEF3C7;
+  --header-height: 56px;
+  --sidebar-width: 240px;
+  --transition: 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+/* ===== HEADER ===== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
+  background: var(--card-bg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.header-logo { display: flex; align-items: center; gap: 10px; margin-right: 24px; }
+.header-logo span { font-size: 16px; font-weight: 700; color: var(--primary); }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); }
+.breadcrumb a { color: var(--primary); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb .sep { color: #CBD5E1; }
+.breadcrumb .current { color: var(--text); font-weight: 500; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.header-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent2)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; }
+.header-admin { font-size: 13px; color: var(--text); }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  position: fixed; top: var(--header-height); left: 0; bottom: 0;
+  width: var(--sidebar-width); background: var(--card-bg);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  overflow-y: auto; z-index: 90;
+}
+.sidebar-nav { flex: 1; padding: 16px 12px; }
+.sidebar-group { margin-bottom: 8px; }
+.sidebar-group-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; padding: 8px 12px 4px; letter-spacing: 0.5px; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; cursor: pointer; transition: var(--transition);
+  color: var(--text-secondary); font-size: 13px; text-decoration: none;
+  position: relative;
+}
+.sidebar-item:hover { background: var(--bg); color: var(--text); }
+.sidebar-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+.sidebar-item .icon { width: 18px; height: 18px; opacity: 0.7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar-item.active .icon { opacity: 1; }
+.sidebar-item.active::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; background: var(--primary); border-radius: 0 3px 3px 0; }
+.sidebar-item .badge { margin-left: auto; background: var(--primary-light); color: var(--primary); font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.sidebar-footer .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+/* ===== MAIN ===== */
+.main { margin-left: var(--sidebar-width); margin-top: var(--header-height); padding: 24px; min-height: calc(100vh - var(--header-height)); }
+
+/* ===== TOOLBAR ===== */
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.toolbar-title h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+.toolbar-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border-radius: 8px; font-size: 13px; font-weight: 500; border: none;
+  cursor: pointer; transition: var(--transition); white-space: nowrap;
+  font-family: inherit; text-decoration: none; line-height: 1.4;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(79,110,247,0.3); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #DC2626; }
+.btn-danger:disabled { background: #FCA5A5; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); color: var(--text); border-color: #CBD5E1; }
+.btn-ghost.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-light); }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.btn-icon { width: 14px; height: 14px; }
+
+/* ===== SEARCH ===== */
+.search-box { position: relative; }
+.search-box input {
+  padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; width: 220px; outline: none; transition: var(--transition);
+  background: var(--card-bg); font-family: inherit;
+}
+.search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.search-box .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 14px; }
+
+/* ===== STATS ===== */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--card-bg); border-radius: var(--card-radius);
+  padding: 16px 20px; box-shadow: var(--shadow); display: flex; align-items: center;
+  gap: 14px; transition: var(--transition); cursor: default;
+}
+.stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.stat-icon.blue { background: var(--primary-light); color: var(--primary); }
+.stat-icon.green { background: var(--success-light); color: var(--success); }
+.stat-icon.purple { background: #EDE9FE; color: var(--accent2); }
+.stat-icon.cyan { background: #ECFEFF; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-secondary); }
+.stat-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+/* ===== TABLE ===== */
+.table-container {
+  background: var(--card-bg); border-radius: var(--card-radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+thead th {
+  background: #F9FAFB; padding: 12px 16px; text-align: left;
+  font-weight: 600; color: var(--text-secondary); font-size: 12px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+thead th:first-child { padding-left: 20px; width: 40px; }
+tbody td {
+  padding: 12px 16px; border-bottom: 1px solid #F3F4F6;
+  color: var(--text); vertical-align: middle;
+}
+tbody td:first-child { padding-left: 20px; }
+tbody tr:hover { background: #F9FAFB; }
+tbody tr:last-child td { border-bottom: none; }
+.cell-name { font-weight: 500; color: var(--text); }
+.cell-desc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+.cell-count { font-weight: 600; color: var(--primary); }
+.cell-time { color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.cell-actions { display: flex; gap: 4px; flex-wrap: nowrap; }
+
+/* ===== CHECKBOX ===== */
+.checkbox-wrap { display: flex; align-items: center; }
+.checkbox-wrap input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;
+}
+
+/* ===== TOGGLE ===== */
+.toggle {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  user-select: none;
+}
+.toggle-switch {
+  width: 38px; height: 22px; border-radius: 11px; background: #D1D5DB;
+  position: relative; transition: var(--transition); flex-shrink: 0;
+}
+.toggle-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: var(--transition); box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle.active .toggle-switch { background: var(--primary); }
+.toggle.active .toggle-switch::after { left: 18px; }
+.toggle-label { font-size: 12px; font-weight: 500; }
+.toggle.active .toggle-label.on { color: var(--success); }
+.toggle:not(.active) .toggle-label.off { color: var(--text-secondary); }
+.toggle .on { display: none; }
+.toggle .off { display: inline; }
+.toggle.active .on { display: inline; }
+.toggle.active .off { display: none; }
+
+/* ===== PAGINATION ===== */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-top: 1px solid var(--border); font-size: 13px;
+}
+.pagination-info { color: var(--text-secondary); }
+.pagination-btns { display: flex; gap: 4px; }
+.pagination-btns button {
+  width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--card-bg); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 12px; color: var(--text); transition: var(--transition);
+}
+.pagination-btns button:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.pagination-btns button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pagination-btns button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--card-bg); border-radius: var(--card-radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15); max-width: 90vw; max-height: 85vh;
+  overflow-y: auto; transition: transform 0.2s; transform: translateY(20px);
+}
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal-sm { width: 440px; }
+.modal-lg { width: 800px; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-size: 16px; font-weight: 600; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); font-size: 16px; transition: var(--transition);
+}
+.modal-close:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 24px; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--border);
+}
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+.form-group .required::after { content: ' *'; color: var(--danger); }
+.form-group input, .form-group textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-family: inherit; outline: none; transition: var(--transition);
+  resize: vertical;
+}
+.form-group input:focus, .form-group textarea:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1);
+}
+.form-group textarea { min-height: 80px; }
+.char-count { font-size: 11px; color: var(--text-secondary); text-align: right; margin-top: 4px; }
+.form-group .helper { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ===== DELETE MODAL ===== */
+.delete-warning { display: flex; align-items: flex-start; gap: 14px; }
+.delete-warning .warn-icon {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--danger-light);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  color: var(--danger); flex-shrink: 0;
+}
+.delete-warning p { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+/* ===== VERIFICATION MODAL ===== */
+.verify-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 300px; }
+.verify-panel { border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.verify-panel h4 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+.verify-panel textarea {
+  width: 100%; min-height: 100px; padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; outline: none;
+}
+.verify-panel textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.verify-result { display: none; }
+.verify-result.show { display: block; }
+.verify-result-item { margin-bottom: 14px; }
+.verify-result-item .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.verify-result-item .value { font-size: 13px; color: var(--text); font-weight: 500; }
+.verify-result-item .answer-box { background: var(--bg); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--text); }
+.progress-bar-wrap { background: #E5E7EB; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 4px; }
+.progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.progress-bar-fill.high { background: var(--success); }
+.progress-bar-fill.mid { background: var(--warning); }
+.progress-bar-fill.low { background: var(--danger); }
+.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.status-badge.pass { background: var(--success-light); color: #065F46; }
+.status-badge.fail { background: var(--danger-light); color: #991B1B; }
+.verify-result-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); font-size: 13px; }
+.verify-loading { display: none; align-items: center; justify-content: center; gap: 8px; padding: 20px; color: var(--primary); font-size: 13px; }
+.verify-loading.show { display: flex; }
+.spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== TOAST ===== */
+.toast-container { position: fixed; top: 70px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--card-bg); border-radius: 8px; padding: 12px 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  display: flex; align-items: center; gap: 10px; font-size: 13px; animation: slideIn 0.3s ease;
+  min-width: 240px; border-left: 3px solid var(--primary);
+}
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warning); }
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+.toast-success .toast-icon { color: var(--success); }
+.toast-error .toast-icon { color: var(--danger); }
+.toast-warning .toast-icon { color: var(--warning); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #A1A1AA; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <div class="header-logo">
+    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
+      <path d="M14 0L27 7.5V17.5L14 25L1 17.5V7.5L14 0Z" fill="url(#lg1)" opacity="0.9"/>
+      <path d="M14 4L23 9.5V15.5L14 21L5 15.5V9.5L14 4Z" fill="url(#lg2)" opacity="0.7"/>
+      <circle cx="14" cy="12" r="3" fill="#fff" opacity="0.9"/>
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="28" y2="32"><stop offset="0%" stop-color="#4F6EF7"/><stop offset="100%" stop-color="#7C4DFF"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="28" y2="32"><stop offset="0%" stop-color="#00B8D9"/><stop offset="100%" stop-color="#4F6EF7"/></linearGradient>
+      </defs>
+    </svg>
+    <span>LegendAI</span>
+  </div>
+  <nav class="breadcrumb">
+    <a href="#">首页</a><span class="sep">›</span>
+    <a href="#">问答管理</a><span class="sep">›</span>
+    <span class="current">QA库管理</span>
+  </nav>
+  <div class="header-right">
+    <span class="header-admin">管理员</span>
+    <div class="header-avatar" title="张明">张</div>
+  </div>
+</header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <nav class="sidebar-nav">
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">系统概览</div>
+      <a class="sidebar-item" href="#"><span class="icon">📊</span>工作台</a>
+      <a class="sidebar-item" href="#"><span class="icon">📈</span>数据看板</a>
+      <a class="sidebar-item" href="#"><span class="icon">🔔</span>系统通知<span class="badge">3</span></a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">AI 应用</div>
+      <a class="sidebar-item" href="#"><span class="icon">🤖</span>智能客服</a>
+      <a class="sidebar-item" href="#"><span class="icon">💬</span>对话管理</a>
+      <a class="sidebar-item active" href="#"><span class="icon">📚</span>QA问答管理<span class="badge">8</span></a>
+      <a class="sidebar-item" href="#"><span class="icon">📝</span>知识库管理</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">内容管理</div>
+      <a class="sidebar-item" href="#"><span class="icon">📄</span>文档管理</a>
+      <a class="sidebar-item" href="#"><span class="icon">🏷</span>标签分类</a>
+      <a class="sidebar-item" href="#"><span class="icon">📋</span>模板管理</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">数据分析</div>
+      <a class="sidebar-item" href="#"><span class="icon">📊</span>使用统计</a>
+      <a class="sidebar-item" href="#"><span class="icon">🎯</span>准确率分析</a>
+      <a class="sidebar-item" href="#"><span class="icon">📑</span>报表导出</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">系统设置</div>
+      <a class="sidebar-item" href="#"><span class="icon">👥</span>用户管理</a>
+      <a class="sidebar-item" href="#"><span class="icon">⚙</span>系统配置</a>
+      <a class="sidebar-item" href="#"><span class="icon">📜</span>操作日志</a>
+    </div>
+  </nav>
+  <div class="sidebar-footer">系统运行正常 <span class="dot"></span> | v2.4.1</div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div>
+      <div class="toolbar-title">
+        <h1>QA库管理</h1>
+        <p>管理问答知识库集合</p>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-primary" onclick="openAddModal()">+ 新增QA库</button>
+      <button class="btn btn-danger" id="batchDeleteBtn" disabled onclick="openBatchDeleteModal()">🗑 批量删除</button>
+    </div>
+    <div class="toolbar-right">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜索库名称..." oninput="renderTable()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue">📚</div>
+      <div>
+        <div class="stat-label">总QA库</div>
+        <div class="stat-value" id="statTotal">8</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div>
+        <div class="stat-label">已启用</div>
+        <div class="stat-value" id="statEnabled">6</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple">💬</div>
+      <div>
+        <div class="stat-label">QA总数</div>
+        <div class="stat-value" id="statQATotal">1,247</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon cyan">📈</div>
+      <div>
+        <div class="stat-label">今日新增</div>
+        <div class="stat-value" id="statToday">23</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><label class="checkbox-wrap"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></label></th>
+            <th>库名称</th>
+            <th>描述</th>
+            <th>QA数量</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th>更新时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <div class="pagination-info" id="paginationInfo">共 8 条记录</div>
+      <div class="pagination-btns">
+        <button id="prevBtn" disabled onclick="prevPage()">‹</button>
+        <button class="active" onclick="goPage(1)">1</button>
+        <button id="nextBtn" disabled onclick="nextPage()">›</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== ADD/EDIT MODAL ===== -->
+<div class="modal-overlay" id="addEditModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="addEditTitle">新增QA库</h3>
+      <button class="modal-close" onclick="closeModal('addEditModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="required">库名称</label>
+        <input type="text" id="libName" maxlength="30" placeholder="请输入库名称" oninput="updateCharCount()">
+        <div class="char-count"><span id="charCount">0</span>/30</div>
+      </div>
+      <div class="form-group">
+        <label>库描述</label>
+        <textarea id="libDesc" placeholder="请输入库描述（可选）" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>状态</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="toggle active" id="modalToggle" onclick="this.classList.toggle('active')">
+            <span class="toggle-switch"></span>
+            <span class="toggle-label on">启用</span>
+            <span class="toggle-label off">禁用</span>
+          </label>
+        </div>
+      </div>
+      <input type="hidden" id="editingId" value="">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addEditModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveLibrary()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>删除确认</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="delete-warning">
+        <div class="warn-icon">⚠</div>
+        <p id="deleteMsg"></p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">取消</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BATCH DELETE MODAL ===== -->
+<div class="modal-overlay" id="batchDeleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>批量删除确认</h3>
+      <button class="modal-close" onclick="closeModal('batchDeleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="delete-warning">
+        <div class="warn-icon">⚠</div>
+        <p id="batchDeleteMsg"></p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('batchDeleteModal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmBatchDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VERIFICATION MODAL ===== -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="verifyTitle">QA验证</h3>
+      <button class="modal-close" onclick="closeModal('verifyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="verify-panels">
+        <div class="verify-panel">
+          <h4>输入测试</h4>
+          <textarea id="verifyInput" placeholder="输入测试问题..."></textarea>
+          <button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="startVerification()">开始验证</button>
+        </div>
+        <div class="verify-panel">
+          <h4>验证结果</h4>
+          <div class="verify-loading" id="verifyLoading">
+            <div class="spinner"></div> 正在验证...
+          </div>
+          <div class="verify-result-placeholder" id="verifyPlaceholder">
+            输入问题后点击"开始验证"查看结果
+          </div>
+          <div class="verify-result" id="verifyResult">
+            <div class="verify-result-item">
+              <div class="label">命中QA</div>
+              <div class="value" id="verifyHitQA">-</div>
+            </div>
+            <div class="verify-result-item">
+              <div class="label">相似度</div>
+              <div class="value" id="verifySimilarity">-</div>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill high" id="verifyProgressBar" style="width:0%"></div></div>
+            </div>
+            <div class="verify-result-item">
+              <div class="label">答案预览</div>
+              <div class="answer-box" id="verifyAnswer">-</div>
+            </div>
+            <div class="verify-result-item">
+              <div class="label">状态</div>
+              <span class="status-badge pass" id="verifyStatus">已通过</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('verifyModal')">关闭</button>
+      <button class="btn btn-ghost" id="verifyModifyBtn" onclick="showToast('正在跳转编辑...', 'success')">修改QA</button>
+      <button class="btn btn-primary" id="verifyMarkBtn" onclick="markVerified()">标记已验证</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== DATA =====
+let libraries = [
+  { id: 1, name: '产品功能FAQ', desc: '产品核心功能相关问答', count: 238, status: true, created: '2024-01-15', updated: '2024-05-20', verified: true },
+  { id: 2, name: '客服话术库', desc: '客户服务标准回复', count: 312, status: true, created: '2024-02-01', updated: '2024-05-18', verified: true },
+  { id: 3, name: '技术支持问答', desc: '技术故障排查指导', count: 156, status: true, created: '2024-02-15', updated: '2024-05-15', verified: false },
+  { id: 4, name: '活动相关问答', desc: '促销活动规则说明', count: 89, status: false, created: '2024-03-01', updated: '2024-04-30', verified: false },
+  { id: 5, name: '账单支付问答', desc: '计费与支付常见问题', count: 124, status: true, created: '2024-03-15', updated: '2024-05-22', verified: true },
+  { id: 6, name: '退换货政策', desc: '退换货流程说明', count: 67, status: true, created: '2024-04-01', updated: '2024-05-10', verified: true },
+  { id: 7, name: '新用户引导', desc: '新用户常见疑问', count: 145, status: true, created: '2024-04-15', updated: '2024-05-19', verified: false },
+  { id: 8, name: '临时活动问答', desc: '五一活动专项', count: 116, status: false, created: '2024-05-01', updated: '2024-05-05', verified: false }
+];
+let nextId = 9;
+let currentVerifyLibId = null;
+
+// ===== PAGE STATE =====
+const pageSize = 10;
+let currentPage = 1;
+let selectedIds = new Set();
+
+// ===== INIT =====
+function init() {
+  renderTable();
+}
+init();
+
+// ===== RENDER TABLE =====
+function getFiltered() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  if (!q) return libraries;
+  return libraries.filter(l => l.name.toLowerCase().includes(q));
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  currentPage = 1;
+  const total = filtered.length;
+  renderPage(filtered, total);
+}
+
+function renderPage(filtered, total) {
+  const tbody = document.getElementById('tableBody');
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = filtered.slice(start, start + pageSize);
+
+  tbody.innerHTML = pageItems.map(lib => {
+    const checked = selectedIds.has(lib.id) ? 'checked' : '';
+    const statusClass = lib.status ? 'active' : '';
+    const timeStyle = 'cell-time';
+    return `
+      <tr>
+        <td><label class="checkbox-wrap"><input type="checkbox" ${checked} onchange="toggleRowSelect(${lib.id}, this.checked)"></label></td>
+        <td><span class="cell-name">${esc(lib.name)}</span></td>
+        <td><span class="cell-desc" title="${esc(lib.desc)}">${esc(lib.desc)}</span></td>
+        <td><span class="cell-count">${lib.count}</span></td>
+        <td>
+          <label class="toggle ${statusClass}" onclick="toggleStatus(${lib.id})">
+            <span class="toggle-switch"></span>
+            <span class="toggle-label on">启用</span>
+            <span class="toggle-label off">禁用</span>
+          </label>
+        </td>
+        <td class="${timeStyle}">${lib.created}</td>
+        <td class="${timeStyle}">${lib.updated}</td>
+        <td>
+          <div class="cell-actions">
+            <button class="btn btn-ghost btn-sm" onclick="goToQADetail(${lib.id})" title="QA详情">
+              <svg class="btn-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="8" x2="8" y2="8" stroke="currentColor" stroke-width="1"/></svg>
+              QA详情
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal(${lib.id})" title="编辑">
+              <svg class="btn-icon" viewBox="0 0 14 14" fill="none"><path d="M2 10.5V12h1.5l7.37-7.37-1.5-1.5L2 10.5zM12.71 3.04a.5.5 0 000-.71l-.79-.79a.5.5 0 00-.71 0l-.73.73 1.5 1.5.73-.73z" fill="currentColor"/></svg>
+              编辑
+            </button>
+            <button class="btn btn-ghost btn-sm danger" onclick="openDeleteModal(${lib.id})" title="删除">
+              <svg class="btn-icon" viewBox="0 0 14 14" fill="none"><path d="M3 4h8l-.7 8.4a1 1 0 01-1 .6H4.7a1 1 0 01-1-.6L3 4zM5 1h4M2 4h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              删除
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="openVerifyModal(${lib.id})" title="验证">
+              <svg class="btn-icon" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 7l2 2 3.5-3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              验证
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  // Pagination info
+  const pagInfo = document.getElementById('paginationInfo');
+  pagInfo.textContent = `共 ${total} 条记录`;
+  document.getElementById('prevBtn').disabled = currentPage <= 1;
+  document.getElementById('nextBtn').disabled = currentPage * pageSize >= total;
+
+  // Update pagination buttons
+  const totalPages = Math.ceil(total / pageSize);
+  const btnContainer = document.querySelector('.pagination-btns');
+  btnContainer.innerHTML = '';
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '‹';
+  prevBtn.disabled = currentPage <= 1;
+  prevBtn.onclick = prevPage;
+  btnContainer.appendChild(prevBtn);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.className = i === currentPage ? 'active' : '';
+    btn.onclick = () => goPage(i);
+    btnContainer.appendChild(btn);
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = '›';
+  nextBtn.disabled = currentPage >= totalPages;
+  nextBtn.onclick = nextPage;
+  btnContainer.appendChild(nextBtn);
+
+  // Update select all
+  document.getElementById('selectAll').checked = false;
+
+  // Update batch delete button
+  updateBatchDeleteBtn();
+
+  // Update stats
+  updateStats();
+}
+
+function updateBatchDeleteBtn() {
+  const btn = document.getElementById('batchDeleteBtn');
+  btn.disabled = selectedIds.size === 0;
+}
+
+function updateStats() {
+  const total = libraries.length;
+  const enabled = libraries.filter(l => l.status).length;
+  const qaTotal = libraries.reduce((sum, l) => sum + l.count, 0);
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statEnabled').textContent = enabled;
+  document.getElementById('statQATotal').textContent = qaTotal.toLocaleString();
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayAdded = libraries.filter(l => l.created === today).length;
+  document.getElementById('statToday').textContent = todayAdded || 23;
+}
+
+function esc(s) {
+  if (!s) return '';
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ===== SELECTION =====
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  const filtered = getFiltered();
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = filtered.slice(start, start + pageSize);
+  if (checked) {
+    pageItems.forEach(l => selectedIds.add(l.id));
+  } else {
+    pageItems.forEach(l => selectedIds.delete(l.id));
+  }
+  renderPage(filtered, filtered.length);
+}
+
+function toggleRowSelect(id, checked) {
+  if (checked) {
+    selectedIds.add(id);
+  } else {
+    selectedIds.delete(id);
+    document.getElementById('selectAll').checked = false;
+  }
+  updateBatchDeleteBtn();
+}
+
+// ===== PAGINATION =====
+function prevPage() {
+  if (currentPage > 1) {
+    currentPage--;
+    const filtered = getFiltered();
+    renderPage(filtered, filtered.length);
+  }
+}
+
+function nextPage() {
+  const filtered = getFiltered();
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderPage(filtered, filtered.length);
+  }
+}
+
+function goPage(p) {
+  currentPage = p;
+  const filtered = getFiltered();
+  renderPage(filtered, filtered.length);
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ===== ADD LIBRARY =====
+function openAddModal() {
+  document.getElementById('addEditTitle').textContent = '新增QA库';
+  document.getElementById('libName').value = '';
+  document.getElementById('libDesc').value = '';
+  document.getElementById('charCount').textContent = '0';
+  document.getElementById('editingId').value = '';
+  const toggle = document.getElementById('modalToggle');
+  toggle.classList.add('active');
+  if (!toggle.classList.contains('active')) toggle.classList.add('active');
+  openModal('addEditModal');
+}
+
+function openEditModal(id) {
+  const lib = libraries.find(l => l.id === id);
+  if (!lib) return;
+  document.getElementById('addEditTitle').textContent = '编辑QA库';
+  document.getElementById('libName').value = lib.name;
+  document.getElementById('libDesc').value = lib.desc;
+  document.getElementById('charCount').textContent = lib.name.length;
+  document.getElementById('editingId').value = id;
+  const toggle = document.getElementById('modalToggle');
+  if (lib.status) {
+    toggle.classList.add('active');
+  } else {
+    toggle.classList.remove('active');
+  }
+  openModal('addEditModal');
+}
+
+function updateCharCount() {
+  const len = document.getElementById('libName').value.length;
+  document.getElementById('charCount').textContent = len;
+}
+
+function saveLibrary() {
+  const name = document.getElementById('libName').value.trim();
+  const desc = document.getElementById('libDesc').value.trim();
+  const status = document.getElementById('modalToggle').classList.contains('active');
+  const editingId = document.getElementById('editingId').value;
+
+  if (!name) {
+    showToast('请输入库名称', 'error');
+    return;
+  }
+
+  if (editingId) {
+    const lib = libraries.find(l => l.id === parseInt(editingId));
+    if (lib) {
+      lib.name = name;
+      lib.desc = desc || lib.desc;
+      lib.status = status;
+      lib.updated = new Date().toISOString().split('T')[0];
+      showToast('QA库更新成功', 'success');
+    }
+  } else {
+    const today = new Date().toISOString().split('T')[0];
+    libraries.push({
+      id: nextId++,
+      name,
+      desc: desc || '',
+      count: 0,
+      status,
+      created: today,
+      updated: today,
+      verified: false
+    });
+    showToast('QA库创建成功', 'success');
+  }
+
+  closeModal('addEditModal');
+  renderTable();
+}
+
+// ===== DELETE =====
+let pendingDeleteId = null;
+
+function openDeleteModal(id) {
+  const lib = libraries.find(l => l.id === id);
+  if (!lib) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteMsg').innerHTML =
+    `确定要删除QA库<strong>「${esc(lib.name)}」</strong>吗？库内 <strong>${lib.count}</strong> 条QA问答将同步删除，此操作不可撤销。`;
+  openModal('deleteModal');
+}
+
+function confirmDelete() {
+  if (pendingDeleteId !== null) {
+    const libName = libraries.find(l => l.id === pendingDeleteId)?.name || '';
+    libraries = libraries.filter(l => l.id !== pendingDeleteId);
+    selectedIds.delete(pendingDeleteId);
+    showToast(`QA库「${libName}」已删除`, 'success');
+    pendingDeleteId = null;
+    closeModal('deleteModal');
+    renderTable();
+  }
+}
+
+function openBatchDeleteModal() {
+  if (selectedIds.size === 0) return;
+  document.getElementById('batchDeleteMsg').innerHTML =
+    `已选中 <strong>${selectedIds.size}</strong> 个QA库，确认批量删除？此操作不可撤销。`;
+  openModal('batchDeleteModal');
+}
+
+function confirmBatchDelete() {
+  const count = selectedIds.size;
+  libraries = libraries.filter(l => !selectedIds.has(l.id));
+  selectedIds.clear();
+  document.getElementById('selectAll').checked = false;
+  showToast(`已成功删除 ${count} 个QA库`, 'success');
+  closeModal('batchDeleteModal');
+  renderTable();
+}
+
+// ===== VERIFICATION =====
+function openVerifyModal(id) {
+  currentVerifyLibId = id;
+  const lib = libraries.find(l => l.id === id);
+  if (!lib) return;
+  document.getElementById('verifyTitle').textContent = `QA验证 - ${lib.name}`;
+  document.getElementById('verifyInput').value = '';
+  document.getElementById('verifyResult').classList.remove('show');
+  document.getElementById('verifyPlaceholder').style.display = 'flex';
+  document.getElementById('verifyLoading').classList.remove('show');
+  document.getElementById('verifyMarkBtn').style.display = 'inline-flex';
+
+  openModal('verifyModal');
+}
+
+function startVerification() {
+  const input = document.getElementById('verifyInput').value.trim();
+  if (!input) {
+    showToast('请输入测试问题', 'error');
+    return;
+  }
+
+  const lib = libraries.find(l => l.id === currentVerifyLibId);
+  if (!lib) return;
+
+  // Show loading
+  document.getElementById('verifyPlaceholder').style.display = 'none';
+  document.getElementById('verifyResult').classList.remove('show');
+  document.getElementById('verifyLoading').classList.add('show');
+
+  // Simulate 1s delay
+  setTimeout(() => {
+    document.getElementById('verifyLoading').classList.remove('show');
+    document.getElementById('verifyResult').classList.add('show');
+
+    // Generate mock result
+    const similarity = Math.floor(Math.random() * 21) + 75; // 75-95%
+    const passed = similarity >= 80;
+    const questions = [
+      `${lib.name}相关问题：${input}`,
+      `${lib.name} - ${input}的解答`
+    ];
+    const answers = [
+      `根据${lib.name}的知识库，关于"${input}"的答案如下：这里是详细的回答内容，涵盖了用户关注的各个方面。系统已匹配到最相关的QA条目。`,
+      `${lib.desc}方面的解答：用户咨询的"${input}"已有完善的标准答案，可直接应用于客服对话中。`
+    ];
+
+    document.getElementById('verifyHitQA').textContent = questions[0];
+    document.getElementById('verifySimilarity').textContent = `${similarity}%`;
+
+    const bar = document.getElementById('verifyProgressBar');
+    bar.style.width = `${similarity}%`;
+    bar.className = 'progress-bar-fill';
+    if (similarity >= 85) bar.classList.add('high');
+    else if (similarity >= 75) bar.classList.add('mid');
+    else bar.classList.add('low');
+
+    document.getElementById('verifyAnswer').textContent = answers[0];
+
+    const statusEl = document.getElementById('verifyStatus');
+    if (passed) {
+      statusEl.textContent = '已通过';
+      statusEl.className = 'status-badge pass';
+    } else {
+      statusEl.textContent = '未通过';
+      statusEl.className = 'status-badge fail';
+    }
+  }, 1000);
+}
+
+function markVerified() {
+  const lib = libraries.find(l => l.id === currentVerifyLibId);
+  if (lib) {
+    lib.verified = true;
+    showToast(`QA库「${lib.name}」已标记为已验证`, 'success');
+    closeModal('verifyModal');
+    renderTable();
+  }
+}
+
+// ===== STATUS TOGGLE =====
+function toggleStatus(id) {
+  const lib = libraries.find(l => l.id === id);
+  if (!lib) return;
+  lib.status = !lib.status;
+  const statusText = lib.status ? '已启用' : '已禁用';
+  showToast(`QA库「${lib.name}」${statusText}`, 'success');
+  renderTable();
+}
+
+// ===== NAVIGATION =====
+function goToQADetail(id) {
+  const lib = libraries.find(l => l.id === id);
+  if (lib) {
+    showToast(`正在跳转到「${lib.name}」的QA详情...`, 'success');
+    setTimeout(() => {
+      window.location.href = 'qa-questions.html';
+    }, 300);
+  }
+}
+
+// ===== TOAST =====
+function showToast(msg, type) {
+  type = type || 'success';
+  const container = document.getElementById('toastContainer');
+  const iconMap = { success: '✓', error: '✕', warning: '⚠' };
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${iconMap[type]}</span>${msg}`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.2s ease forwards';
+    setTimeout(() => toast.remove(), 200);
+  }, 2500);
+}
+
+// ===== CLOSE MODALS ON OVERLAY CLICK =====
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>

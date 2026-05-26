@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量导入QA - LegendAI</title>
+<style>
+:root {
+    --primary: #4F6EF7; --primary-dark: #3D5CE0; --accent: #00B8D9;
+    --accent2: #7C4DFF; --bg: #F7F8FA; --card-bg: #FFFFFF;
+    --text: #1A1D2B; --text-secondary: #6B7280; --border: #E2E8F0;
+    --card-radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+    --success: #22C55E; --danger: #EF4444; --warning: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px;
+}
+.card {
+    max-width: 720px; width: 100%; background: var(--card-bg);
+    border-radius: var(--card-radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.card-header {
+    padding: 28px 32px 0; border-bottom: 1px solid var(--border);
+}
+.card-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; justify-content: center; padding: 0 16px 20px; }
+.stepper .step-wrap { display: flex; align-items: center; position: relative; }
+.stepper .step-dot {
+    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 600; transition: all 0.3s;
+    border: 2px solid var(--border); color: var(--text-secondary); background: #fff;
+}
+.stepper .step-dot.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+.stepper .step-dot.done { border-color: var(--success); background: var(--success); color: #fff; }
+.stepper .step-line {
+    width: 64px; height: 2px; background: var(--border); transition: background 0.3s;
+}
+.stepper .step-line.done { background: var(--success); }
+.stepper .step-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; text-align: center; }
+.stepper .step-label.active { color: var(--primary); font-weight: 600; }
+.stepper .step-label.done { color: var(--success); }
+
+/* Step content */
+.card-body { padding: 32px; }
+.step-panel { display: none; animation: slideIn 0.3s ease; }
+.step-panel.active { display: block; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-30px); } }
+
+.step-desc { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+
+/* Template preview */
+.template-preview { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+.template-preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.template-preview th { background: #F1F5F9; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 1px solid var(--border); }
+.template-preview td { padding: 8px 12px; color: #CBD5E1; border-bottom: 1px solid #F1F5F9; }
+.template-preview th:not(:last-child), .template-preview td:not(:last-child) { border-right: 1px solid var(--border); }
+
+.btn-download {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--primary);
+    color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none;
+    font-size: 14px; font-weight: 600; transition: background 0.2s; cursor: pointer; border: none;
+}
+.btn-download:hover { background: var(--primary-dark); }
+.btn-download svg { width: 18px; height: 18px; }
+.file-size { font-size: 12px; color: var(--text-secondary); margin-left: 12px; }
+
+/* Upload */
+.upload-zone {
+    border: 2px dashed var(--border); border-radius: var(--card-radius); padding: 48px 24px;
+    text-align: center; transition: all 0.3s; cursor: pointer; margin-bottom: 16px;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--primary); background: rgba(79,110,247,0.04); }
+.upload-zone svg { width: 48px; height: 48px; color: var(--text-secondary); margin-bottom: 12px; }
+.upload-zone p { color: var(--text-secondary); font-size: 14px; }
+.upload-zone .upload-link { color: var(--primary); cursor: pointer; font-weight: 500; }
+.upload-hint { font-size: 12px; color: var(--text-secondary); text-align: center; }
+
+.file-info {
+    border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex;
+    align-items: center; gap: 16px; margin-bottom: 16px;
+}
+.file-info .file-icon { width: 40px; height: 40px; background: #E8F5E9; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #4CAF50; flex-shrink: 0; }
+.file-info .file-meta { flex: 1; }
+.file-info .file-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.file-info .file-detail { font-size: 12px; color: var(--text-secondary); }
+.file-info .file-remove { color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
+.file-info .file-remove:hover { color: var(--danger); background: #FEF2F2; }
+
+/* Data preview */
+.preview-stats { display: flex; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: #F8FAFC; border-radius: 8px; font-size: 13px; }
+.preview-stats span { font-weight: 600; }
+.preview-stats .stat-ok { color: var(--success); }
+.preview-stats .stat-err { color: var(--danger); }
+
+.preview-table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+.preview-table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.preview-table-wrap th { background: #F1F5F9; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 1px solid var(--border); }
+.preview-table-wrap td { padding: 10px 12px; border-bottom: 1px solid #F1F5F9; }
+.preview-table-wrap tr.error-row { background: #FEF2F2; }
+.preview-table-wrap td .err-reason { color: var(--danger); font-size: 12px; display: block; margin-top: 2px; }
+.preview-table-wrap td .answer-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Step 4 */
+.result-icon {
+    width: 72px; height: 72px; border-radius: 50%; background: #DCFCE7; display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 20px;
+    animation: bouncePop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+@keyframes bouncePop {
+    0% { transform: scale(0); } 50% { transform: scale(1.2); }
+    70% { transform: scale(0.9); } 100% { transform: scale(1); }
+}
+.result-icon svg { width: 36px; height: 36px; color: var(--success); }
+.result-text { text-align: center; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.result-count { text-align: center; font-size: 14px; color: var(--text-secondary); }
+
+/* Footer buttons */
+.card-footer { padding: 20px 32px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.card-footer.right { justify-content: flex-end; }
+.card-footer.center { justify-content: center; }
+
+.btn { padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #F1F5F9; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #16A34A; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.download-center { text-align: center; margin-bottom: 24px; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="card-header">
+        <h1>批量导入QA</h1>
+        <div class="stepper" id="stepper">
+            <div class="step-wrap">
+                <div class="step-dot active" id="dot-1">1</div>
+                <div class="step-label active" id="label-1">下载模板</div>
+            </div>
+            <div class="step-line" id="line-1"></div>
+            <div class="step-wrap">
+                <div class="step-dot" id="dot-2">2</div>
+                <div class="step-label" id="label-2">上传文件</div>
+            </div>
+            <div class="step-line" id="line-2"></div>
+            <div class="step-wrap">
+                <div class="step-dot" id="dot-3">3</div>
+                <div class="step-label" id="label-3">数据预览</div>
+            </div>
+            <div class="step-line" id="line-3"></div>
+            <div class="step-wrap">
+                <div class="step-dot" id="dot-4">4</div>
+                <div class="step-label" id="label-4">导入结果</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- Step 1 -->
+        <div class="step-panel active" id="step-1">
+            <p class="step-desc">请先下载标准导入模板，按模板格式填写数据</p>
+            <div class="template-preview">
+                <table>
+                    <thead><tr><th>问题</th><th>相似问题</th><th>答案</th><th>状态</th></tr></thead>
+                    <tbody>
+                        <tr><td>如何重置密码？</td><td>忘记密码怎么办</td><td>请前往设置页面...</td><td>启用</td></tr>
+                        <tr><td>支持哪些支付方式？</td><td>怎么付款</td><td>支持微信、支付宝...</td><td>启用</td></tr>
+                        <tr><td colspan="4" style="color:var(--text-secondary);">...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="download-center">
+                <button class="btn btn-download" onclick="handleDownload()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载模板
+                </button>
+                <span class="file-size">XLSX &middot; 23KB</span>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-panel" id="step-2">
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>拖拽文件到此处，或<span class="upload-link">点击选择</span></p>
+                <input type="file" id="fileInput" style="display:none" accept=".xlsx,.csv" onchange="handleFileSelect(event)">
+            </div>
+            <p class="upload-hint">支持 .xlsx, .csv 格式，单次最多 5000 条</p>
+            <div class="file-info hidden" id="fileInfo">
+                <div class="file-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="file-meta">
+                    <div class="file-name" id="fileName">qa_import_2026.xlsx</div>
+                    <div class="file-detail" id="fileDetail">56KB &middot; 24 条数据</div>
+                </div>
+                <div class="file-remove" title="移除" onclick="removeFile()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-panel" id="step-3">
+            <div class="preview-stats">
+                共 <span>24</span> 条数据 &nbsp;|&nbsp;
+                有效 <span class="stat-ok">22</span> 条 &nbsp;|&nbsp;
+                异常 <span class="stat-err">2</span> 条
+            </div>
+            <div class="preview-table-wrap">
+                <table>
+                    <thead><tr><th style="width:50px">序号</th><th>问题</th><th>答案</th><th style="width:80px">状态</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td>如何重置密码？</td><td class="answer-cell">请前往设置-安全中心-修改密码页面，按照提示完成密码重置操作。</td><td style="color:var(--success)">有效</td></tr>
+                        <tr><td>2</td><td>支持哪些支付方式？</td><td class="answer-cell">支持微信支付、支付宝、银联卡以及Apple Pay等多种方式。</td><td style="color:var(--success)">有效</td></tr>
+                        <tr><td>3</td><td>如何申请退款？</td><td class="answer-cell">请在订单详情页点击申请退款按钮，填写退款原因后提交审核。</td><td style="color:var(--success)">有效</td></tr>
+                        <tr><td>4</td><td>如何联系客服？</td><td class="answer-cell">可通过在线客服、电话400-xxx-xxxx或邮件support@example.com联系。</td><td style="color:var(--success)">有效</td></tr>
+                        <tr class="error-row"><td>5</td><td colspan="2" style="color:var(--danger)">数据格式错误<span class="err-reason">原因：答案字段为空</span></td><td style="color:var(--danger)">异常</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="font-size:12px; color:var(--text-secondary);">仅显示前 5 条记录预览</p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-panel" id="step-4">
+            <div class="result-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="result-text">导入完成</div>
+            <div class="result-count">成功导入 <span style="color:var(--success);font-weight:600;">22</span> 条 &nbsp;|&nbsp; 跳过异常 <span style="color:var(--danger);font-weight:600;">2</span> 条</div>
+        </div>
+    </div>
+
+    <div class="card-footer" id="footer-1">
+        <div></div>
+        <button class="btn btn-primary" onclick="goStep(2)">下一步</button>
+    </div>
+    <div class="card-footer hidden" id="footer-2">
+        <button class="btn btn-secondary" onclick="goStep(1)">上一步</button>
+        <button class="btn btn-primary" id="btnStep2" onclick="goStep(3)">下一步</button>
+    </div>
+    <div class="card-footer hidden" id="footer-3">
+        <button class="btn btn-secondary" onclick="goStep(2)">上一步</button>
+        <button class="btn btn-success" onclick="startImport()">开始导入</button>
+    </div>
+    <div class="card-footer hidden center" id="footer-4">
+        <button class="btn btn-primary" onclick="resetForm()">完成</button>
+    </div>
+</div>
+
+<script>
+let currentStep = 1;
+let isFileUploaded = false;
+
+function updateStepper(step) {
+    for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById('dot-' + i);
+        const label = document.getElementById('label-' + i);
+        const line = document.getElementById('line-' + i);
+        dot.className = 'step-dot';
+        label.className = 'step-label';
+        if (line) line.className = 'step-line';
+
+        if (i < step) {
+            dot.classList.add('done');
+            dot.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+            label.classList.add('done');
+            if (line) line.classList.add('done');
+        } else if (i === step) {
+            dot.classList.add('active');
+            dot.textContent = i;
+            label.classList.add('active');
+        } else {
+            dot.textContent = i;
+        }
+    }
+}
+
+function goStep(step) {
+    if (step === 2 && !isFileUploaded) {
+        // Allow going to step 2 without file for demo purposes - in real app, validate upload
+    }
+    // Animate out
+    const oldPanel = document.getElementById('step-' + currentStep);
+    oldPanel.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => {
+        oldPanel.classList.remove('active');
+        oldPanel.style.animation = '';
+        currentStep = step;
+        updateStepper(step);
+        document.getElementById('step-' + step).classList.add('active');
+        updateFooter();
+    }, 280);
+}
+
+function updateFooter() {
+    for (let i = 1; i <= 4; i++) {
+        const footer = document.getElementById('footer-' + i);
+        if (i === currentStep) footer.classList.remove('hidden');
+        else footer.classList.add('hidden');
+    }
+}
+
+function handleDownload() {
+    alert('模板下载功能将触发文件下载，示例模板文件：qa_import_template.xlsx');
+}
+
+// Upload handling
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) showFileInfo(e.dataTransfer.files[0]);
+});
+
+function handleFileSelect(event) {
+    if (event.target.files.length) showFileInfo(event.target.files[0]);
+}
+
+function showFileInfo(file) {
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileDetail').textContent = (file.size / 1024).toFixed(0) + 'KB · 24 条数据';
+    document.getElementById('fileInfo').classList.remove('hidden');
+    document.getElementById('uploadZone').classList.add('hidden');
+    isFileUploaded = true;
+}
+
+function removeFile() {
+    document.getElementById('fileInfo').classList.add('hidden');
+    document.getElementById('uploadZone').classList.remove('hidden');
+    document.getElementById('fileInput').value = '';
+    isFileUploaded = false;
+}
+
+function startImport() {
+    goStep(4);
+}
+
+function resetForm() {
+    currentStep = 1;
+    isFileUploaded = false;
+    updateStepper(1);
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step-1').classList.add('active');
+    document.getElementById('fileInfo').classList.add('hidden');
+    document.getElementById('uploadZone').classList.remove('hidden');
+    document.getElementById('fileInput').value = '';
+    updateFooter();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA问题 / 新增 — LegendAI</title>
+<style>
+:root {
+    --primary: #4F6EF7; --primary-dark: #3D5CE0; --accent: #00B8D9;
+    --accent2: #7C4DFF; --bg: #F7F8FA; --card-bg: #FFFFFF;
+    --text: #1A1D2B; --text-secondary: #6B7280; --border: #E2E8F0;
+    --card-radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 40px 20px; line-height: 1.6;
+}
+.card {
+    background: var(--card-bg); border-radius: var(--card-radius);
+    box-shadow: var(--shadow); width: 100%; max-width: 800px;
+    padding: 32px;
+}
+.card-header { margin-bottom: 28px; }
+.card-header h2 { font-size: 20px; font-weight: 600; color: var(--text); }
+.form-group { margin-bottom: 24px; }
+.form-label {
+    display: block; font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px;
+}
+.required::after { content: " *"; color: #EF4444; }
+.input-wrap input, .input-wrap textarea, .input-wrap select {
+    width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); background: var(--card-bg);
+    transition: border-color 0.2s; outline: none;
+}
+.input-wrap input:focus, .input-wrap textarea:focus, .input-wrap select:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1);
+}
+.char-count {
+    display: block; text-align: right; font-size: 12px; color: var(--text-secondary); margin-top: 4px;
+}
+.char-count.warn { color: #EF4444; }
+
+/* Similar questions */
+.similar-list { display: flex; flex-direction: column; gap: 8px; }
+.similar-item {
+    display: flex; align-items: center; gap: 8px;
+    animation: fadeIn 0.3s ease-out;
+}
+.similar-item.removing { animation: fadeOut 0.3s ease-out forwards; }
+.similar-item input {
+    flex: 1; padding: 8px 12px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px; outline: none;
+    color: var(--text); background: var(--card-bg);
+    transition: border-color 0.2s;
+}
+.similar-item input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.similar-item .btn-remove {
+    width: 32px; height: 32px; flex-shrink: 0; border-radius: 6px;
+    border: 1px solid var(--border); background: #fff; color: #EF4444;
+    font-size: 16px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s; line-height: 1;
+}
+.similar-item .btn-remove:hover { background: #FEF2F2; border-color: #EF4444; }
+
+.btn-add-similar {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; font-size: 13px; color: var(--primary);
+    background: transparent; border: 1.5px dashed var(--primary); border-radius: 8px;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+    margin-top: 4px;
+}
+.btn-add-similar:hover { background: rgba(79,110,247,0.05); }
+.btn-add-similar svg { width: 16px; height: 16px; }
+
+/* Format toolbar */
+.toolbar {
+    display: flex; gap: 4px; padding: 8px 10px; background: #F9FAFB;
+    border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0;
+}
+.toolbar button {
+    width: 32px; height: 32px; border: 1px solid transparent; border-radius: 6px;
+    background: transparent; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: var(--text-secondary); transition: all 0.15s;
+}
+.toolbar button:hover { background: #E2E8F0; color: var(--text); }
+.toolbar button:active { background: #CBD5E1; }
+.toolbar button svg { width: 16px; height: 16px; }
+.answer-textarea {
+    width: 100%; padding: 10px 14px; font-size: 14px; font-family: monospace;
+    border: 1px solid var(--border); border-radius: 0 0 8px 8px;
+    color: var(--text); background: var(--card-bg); resize: vertical;
+    min-height: 156px; outline: none; line-height: 1.8;
+    transition: border-color 0.2s;
+}
+.answer-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+
+/* Toggle */
+.toggle-row { display: flex; align-items: center; gap: 12px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { display: none; }
+.toggle-switch .slider {
+    position: absolute; inset: 0; background: #CBD5E1; border-radius: 12px;
+    cursor: pointer; transition: background 0.25s;
+}
+.toggle-switch .slider::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; background: #fff; border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.25s;
+}
+.toggle-switch input:checked + .slider { background: var(--primary); }
+.toggle-switch input:checked + .slider::after { transform: translateX(20px); }
+.toggle-label { font-size: 14px; color: var(--text); }
+
+/* Radio */
+.radio-group { display: flex; gap: 20px; flex-wrap: wrap; }
+.radio-group label {
+    display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: var(--text);
+}
+.radio-group input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px; }
+.date-picker-wrap { margin-top: 10px; display: none; }
+.date-picker-wrap.show { display: block; animation: fadeIn 0.3s ease-out; }
+.date-picker-wrap input {
+    padding: 8px 12px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px; outline: none;
+    color: var(--text);
+}
+.date-picker-wrap input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+
+/* Number input */
+.input-wrap input[type="number"] { max-width: 200px; }
+.hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Buttons */
+.form-actions {
+    display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;
+    padding-top: 24px; border-top: 1px solid var(--border);
+}
+.btn { padding: 10px 24px; font-size: 14px; font-weight: 500; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.btn-cancel { background: #F3F4F6; color: var(--text-secondary); border-color: var(--border); }
+.btn-cancel:hover { background: #E5E7EB; }
+.btn-save { background: var(--primary); color: #fff; }
+.btn-save:hover { background: var(--primary-dark); }
+
+.field-error { color: #EF4444; font-size: 12px; margin-top: 4px; display: none; }
+.field-error.show { display: block; }
+
+.toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: #10B981; color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; z-index: 1000;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.3); pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.init { transform: translateX(-50%) translateY(-12px); }
+
+.tooltip {
+    position: fixed; background: #1F2937; color: #fff; padding: 8px 14px;
+    border-radius: 6px; font-size: 12px; z-index: 999;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+}
+.tooltip.show { opacity: 1; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-6px); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        <h2 id="formTitle">QA问题 / 新增</h2>
+    </div>
+
+    <form id="qaForm" novalidate>
+        <!-- 问题 -->
+        <div class="form-group">
+            <label class="form-label required" for="question">问题</label>
+            <div class="input-wrap">
+                <input type="text" id="question" maxlength="500" placeholder="请输入问题内容">
+            </div>
+            <span class="char-count" id="questionCount">0/500</span>
+            <div class="field-error" id="questionError">此字段为必填项</div>
+        </div>
+
+        <!-- 相似问题 -->
+        <div class="form-group">
+            <label class="form-label">相似问题</label>
+            <div class="similar-list" id="similarList"></div>
+            <button type="button" class="btn-add-similar" id="btnAddSimilar" onclick="addSimilar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                添加相似问题
+            </button>
+        </div>
+
+        <!-- 答案 -->
+        <div class="form-group">
+            <label class="form-label required" for="answer">答案</label>
+            <div class="toolbar">
+                <button type="button" title="加粗" onclick="insertFormat('**')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></button>
+                <button type="button" title="斜体" onclick="insertFormat('*')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+                <button type="button" title="无序列表" onclick="insertFormat('- ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+                <button type="button" title="有序列表" onclick="insertFormat('1. ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4l2-3H4"/></svg></button>
+                <button type="button" title="引用" onclick="insertFormat('> ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21V10.5a4.5 4.5 0 0 1 4.5-4.5"/><path d="M21 21V10.5a4.5 4.5 0 0 0-4.5-4.5"/></svg></button>
+            </div>
+            <textarea class="answer-textarea" id="answer" rows="6" placeholder="请输入答案内容"></textarea>
+            <div class="field-error" id="answerError">此字段为必填项</div>
+        </div>
+
+        <!-- 所属QA库 -->
+        <div class="form-group">
+            <label class="form-label required" for="qaLibrary">所属QA库</label>
+            <div class="input-wrap">
+                <select id="qaLibrary">
+                    <option value="">请选择QA库</option>
+                    <option value="product-faq">产品FAQ</option>
+                    <option value="customer-service">客服话术</option>
+                    <option value="tech-doc">技术文档</option>
+                    <option value="after-sales">售后服务</option>
+                    <option value="activity-rules">活动规则</option>
+                </select>
+            </div>
+            <div class="field-error" id="libraryError">此字段为必填项</div>
+        </div>
+
+        <!-- 生效时间 -->
+        <div class="form-group">
+            <label class="form-label">生效时间</label>
+            <div class="radio-group">
+                <label><input type="radio" name="effectiveTime" value="immediate" checked onchange="toggleDatePicker()"> 立即生效</label>
+                <label><input type="radio" name="effectiveTime" value="scheduled" onchange="toggleDatePicker()"> 定时生效</label>
+            </div>
+            <div class="date-picker-wrap" id="datePickerWrap">
+                <input type="datetime-local" id="scheduledDate">
+            </div>
+        </div>
+
+        <!-- 启用状态 -->
+        <div class="form-group">
+            <label class="form-label">启用状态</label>
+            <div class="toggle-row">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enabled" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label" id="toggleLabel">已启用</span>
+            </div>
+        </div>
+
+        <!-- 排序号 -->
+        <div class="form-group">
+            <label class="form-label" for="sortOrder">排序号</label>
+            <div class="input-wrap">
+                <input type="number" id="sortOrder" min="1" step="1" placeholder="请输入排序号">
+            </div>
+            <div class="hint">数值越小排序越靠前</div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-cancel" onclick="handleCancel()">取消</button>
+            <button type="submit" class="btn btn-save">保存</button>
+        </div>
+    </form>
+</div>
+
+<div class="toast init" id="toast"></div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// Char count for question
+const questionInput = document.getElementById('question');
+const questionCount = document.getElementById('questionCount');
+questionInput.addEventListener('input', function() {
+    const len = this.value.length;
+    questionCount.textContent = len + '/500';
+    questionCount.classList.toggle('warn', len >= 490);
+    document.getElementById('questionError').classList.remove('show');
+});
+
+// Similar questions
+let similarCount = 0;
+const MAX_SIMILAR = 10;
+
+function addSimilar() {
+    if (similarCount >= MAX_SIMILAR) {
+        showTooltip('最多添加10条相似问题');
+        return;
+    }
+    similarCount++;
+    const list = document.getElementById('similarList');
+    const item = document.createElement('div');
+    item.className = 'similar-item';
+    item.innerHTML = '<input type="text" placeholder="请输入相似问题 ' + similarCount + '" maxlength="500"><button type="button" class="btn-remove" onclick="removeSimilar(this)" title="删除">\u00d7</button>';
+    list.appendChild(item);
+    updateAddButton();
+}
+
+function removeSimilar(btn) {
+    const item = btn.closest('.similar-item');
+    item.classList.add('removing');
+    item.addEventListener('animationend', function() {
+        item.remove();
+        similarCount--;
+        updateAddButton();
+    });
+}
+
+function updateAddButton() {
+    const btn = document.getElementById('btnAddSimilar');
+    if (similarCount >= MAX_SIMILAR) {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+    } else {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+    }
+}
+
+// Format toolbar
+function insertFormat(marker) {
+    const ta = document.getElementById('answer');
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = ta.value;
+    const before = text.substring(0, start);
+    const selection = text.substring(start, end) || '';
+
+    let newText, cursorPos;
+    if (marker === '**' || marker === '*') {
+        const tag = marker;
+        if (selection) {
+            newText = before + tag + selection + tag + text.substring(end);
+            cursorPos = start + tag.length + selection.length + tag.length;
+        } else {
+            newText = before + tag + tag + text.substring(end);
+            cursorPos = start + tag.length;
+        }
+    } else if (marker === '- ' || marker === '1. ' || marker === '> ') {
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const prefix = before.substring(0, lineStart) + marker;
+        newText = prefix + text.substring(lineStart);
+        cursorPos = prefix.length + (text.substring(lineStart).length);
+    } else {
+        newText = text;
+        cursorPos = start;
+    }
+
+    ta.value = newText;
+    ta.focus();
+    ta.setSelectionRange(cursorPos, cursorPos);
+    document.getElementById('answerError').classList.remove('show');
+}
+
+// Toggle
+const toggle = document.getElementById('enabled');
+const toggleLabel = document.getElementById('toggleLabel');
+toggle.addEventListener('change', function() {
+    toggleLabel.textContent = this.checked ? '已启用' : '已禁用';
+});
+
+// Date picker
+function toggleDatePicker() {
+    const wrap = document.getElementById('datePickerWrap');
+    const scheduledRadio = document.querySelector('input[name="effectiveTime"][value="scheduled"]');
+    if (scheduledRadio.checked) {
+        wrap.classList.add('show');
+    } else {
+        wrap.classList.remove('show');
+    }
+}
+
+// Tooltip
+let tooltipTimer;
+function showTooltip(msg) {
+    const tt = document.getElementById('tooltip');
+    tt.textContent = msg;
+    tt.classList.add('show');
+    const rect = document.getElementById('btnAddSimilar').getBoundingClientRect();
+    tt.style.left = rect.left + 'px';
+    tt.style.top = (rect.bottom + 8) + 'px';
+    clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(function() { tt.classList.remove('show'); }, 2000);
+}
+
+// Toast
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('init');
+    toast.classList.add('show');
+    setTimeout(function() {
+        toast.classList.remove('show');
+        setTimeout(function() { toast.classList.add('init'); }, 300);
+    }, 3000);
+}
+
+// Form submit
+document.getElementById('qaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let valid = true;
+
+    const qVal = questionInput.value.trim();
+    if (!qVal) { document.getElementById('questionError').classList.add('show'); valid = false; }
+
+    const aVal = document.getElementById('answer').value.trim();
+    if (!aVal) { document.getElementById('answerError').classList.add('show'); valid = false; }
+
+    const libVal = document.getElementById('qaLibrary').value;
+    if (!libVal) { document.getElementById('libraryError').classList.add('show'); valid = false; }
+
+    if (!valid) return;
+
+    showToast('QA问题创建成功！');
+});
+
+function handleCancel() {
+    questionInput.value = '';
+    questionCount.textContent = '0/500';
+    document.getElementById('answer').value = '';
+    document.getElementById('qaLibrary').value = '';
+    document.getElementById('similarList').innerHTML = '';
+    similarCount = 0;
+    updateAddButton();
+    toggle.checked = true;
+    toggleLabel.textContent = '已启用';
+    document.querySelectorAll('.field-error').forEach(function(el) { el.classList.remove('show'); });
+    document.querySelector('input[name="effectiveTime"][value="immediate"]').checked = true;
+    document.getElementById('datePickerWrap').classList.remove('show');
+    document.getElementById('sortOrder').value = '';
+}
+</script>
+</body>
+</html>

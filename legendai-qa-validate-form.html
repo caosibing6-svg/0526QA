@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA验证 — LegendAI</title>
+<style>
+:root {
+    --primary: #4F6EF7; --primary-dark: #3D5CE0; --accent: #00B8D9;
+    --accent2: #7C4DFF; --bg: #F7F8FA; --card-bg: #FFFFFF;
+    --text: #1A1D2B; --text-secondary: #6B7280; --border: #E2E8F0;
+    --card-radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 40px 20px; line-height: 1.6;
+}
+.card {
+    background: var(--card-bg); border-radius: var(--card-radius);
+    box-shadow: var(--shadow); width: 100%; max-width: 800px;
+    padding: 32px;
+}
+.card-header { margin-bottom: 28px; }
+.card-header h2 { font-size: 20px; font-weight: 600; color: var(--text); }
+.card-header .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+.panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+
+/* Left panel */
+.test-input { margin-bottom: 16px; }
+.test-input textarea {
+    width: 100%; padding: 10px 14px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    background: var(--card-bg); resize: vertical; min-height: 72px;
+    outline: none; line-height: 1.6;
+    transition: border-color 0.2s;
+}
+.test-input textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+
+.btn-validate {
+    width: 100%; padding: 11px; font-size: 14px; font-weight: 500;
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; font-family: inherit; transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-validate:hover { background: var(--primary-dark); }
+.btn-validate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+    display: none;
+}
+.btn-validate.loading .btn-text { display: none; }
+.btn-validate.loading .spinner { display: inline-block; }
+
+.history-section { margin-top: 24px; }
+.history-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; transition: all 0.2s; background: var(--card-bg);
+}
+.history-item:hover { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79,110,247,0.08); }
+.history-item .hq { font-size: 13px; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item .hmeta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+.hmeta .similarity { font-weight: 600; }
+.hmeta .similarity.high { color: #10B981; }
+.hmeta .similarity.med { color: #F59E0B; }
+.hmeta .similarity.low { color: #EF4444; }
+
+/* Right panel */
+.result-area { display: none; }
+.result-area.show { display: block; animation: fadeIn 0.35s ease-out; }
+
+.result-card {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    margin-bottom: 16px;
+}
+.result-card .rc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.rc-header .qa-id { font-size: 14px; font-weight: 600; color: var(--text); }
+.badge {
+    display: inline-block; padding: 2px 10px; font-size: 12px; font-weight: 500;
+    border-radius: 100px;
+}
+.badge.hit { background: #D1FAE5; color: #065F46; }
+.badge.miss { background: #FEE2E2; color: #991B1B; }
+.badge.partial { background: #FEF3C7; color: #92400E; }
+
+.sim-row { margin-bottom: 10px; }
+.sim-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.sim-bar-wrap { height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; }
+.sim-bar {
+    height: 100%; border-radius: 4px; width: 0; transition: width 1s ease-out;
+}
+.sim-bar.high { background: #10B981; }
+.sim-bar.med { background: #F59E0B; }
+.sim-bar.low { background: #EF4444; }
+
+.answer-preview { margin-top: 16px; display: none; }
+.answer-preview.show { display: block; animation: fadeIn 0.4s ease-out; }
+.answer-preview .ap-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.answer-preview .ap-content {
+    padding: 12px; background: #F9FAFB; border-radius: 8px;
+    font-size: 14px; color: var(--text); line-height: 1.7; white-space: pre-wrap;
+}
+
+.action-buttons { display: flex; gap: 10px; margin-top: 16px; }
+.btn { padding: 10px 20px; font-size: 14px; font-weight: 500; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover { background: #F3F4F6; color: var(--text); }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
+.empty-state svg { width: 48px; height: 48px; color: #CBD5E1; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+.toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: #10B981; color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; z-index: 1000;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.3); pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.init { transform: translateX(-50%) translateY(-12px); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+    .columns { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        <h2>QA验证</h2>
+        <p class="subtitle">在当前QA库中验证问答匹配效果</p>
+    </div>
+
+    <div class="columns">
+        <!-- Left column -->
+        <div>
+            <div class="panel-title">验证输入</div>
+            <div class="test-input">
+                <textarea id="testQuestion" rows="3" placeholder="请输入用户可能提出的问题..."></textarea>
+            </div>
+            <button class="btn-validate" id="btnValidate" onclick="startValidate()">
+                <span class="btn-text">开始验证</span>
+                <span class="spinner"></span>
+            </button>
+
+            <div class="history-section">
+                <div class="history-title">验证历史</div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div>
+            <div class="panel-title">验证结果</div>
+            <div class="empty-state" id="emptyState">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <p>输入测试问题并点击"开始验证"查看匹配结果</p>
+            </div>
+
+            <div class="result-area" id="resultArea">
+                <div class="result-card">
+                    <div class="rc-header">
+                        <span class="qa-id" id="resultQaId">QA-1024</span>
+                        <span class="badge hit" id="resultBadge">命中</span>
+                    </div>
+                    <div class="sim-row">
+                        <div class="sim-label">相似度：<strong id="simPercent">92%</strong></div>
+                        <div class="sim-bar-wrap">
+                            <div class="sim-bar high" id="simBar"></div>
+                        </div>
+                    </div>
+                    <div class="answer-preview show" id="answerPreview">
+                        <div class="ap-title">标准答案</div>
+                        <div class="ap-content" id="answerContent"></div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="markVerified()">标记已验证</button>
+                    <button class="btn btn-ghost" onclick="editQA()">编辑QA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast init" id="toast"></div>
+
+<script>
+// Mock validation data
+var mockResults = {
+    high: { qaId: 'QA-1024', similarity: 92, answer: '您好，关于退款申请，请您在订单详情页点击"申请退款"按钮，填写退款原因后提交。我们会在1-3个工作日内处理您的申请，退款金额将原路返回您的支付账户。如有疑问请联系在线客服。', badge: 'hit', badgeText: '命中' },
+    med: { qaId: 'QA-2056', similarity: 68, answer: '我们的产品保修期为自购买之日起12个月。在保修期内，如出现非人为损坏的质量问题，我们提供免费维修或更换服务。请保留好购买凭证以便享受保修服务。', badge: 'partial', badgeText: '部分匹配' },
+    low: { qaId: 'QA-3078', similarity: 45, answer: '会员积分可通过每日签到、完成订单、参与活动等方式获取。积分可在积分商城兑换优惠券或礼品。积分有效期为获取之日起180天。', badge: 'miss', badgeText: '未命中' }
+};
+
+// Mock history data
+var historyData = [
+    { question: '怎么申请退货退款？', similarity: 92, time: '10分钟前', result: mockResults.high },
+    { question: '产品保修多久？', similarity: 68, time: '30分钟前', result: mockResults.med },
+    { question: '积分怎么获得？', similarity: 45, time: '1小时前', result: mockResults.low }
+];
+
+function renderHistory() {
+    var list = document.getElementById('historyList');
+    list.innerHTML = historyData.map(function(h) {
+        var simClass = h.similarity >= 80 ? 'high' : (h.similarity >= 60 ? 'med' : 'low');
+        return '<div class="history-item" onclick="rerunFromHistory(\'' + h.question.replace(/'/g, "\\'") + '\', ' + JSON.stringify(h.result).replace(/'/g, "\\'") + ')">' +
+            '<div class="hq">' + h.question + '</div>' +
+            '<div class="hmeta"><span>' + h.time + '</span><span class="similarity ' + simClass + '">' + h.similarity + '%</span></div>' +
+        '</div>';
+    }).join('');
+}
+
+function startValidate() {
+    var question = document.getElementById('testQuestion').value.trim();
+    if (!question) {
+        showToast('请输入测试问题');
+        return;
+    }
+
+    var btn = document.getElementById('btnValidate');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    // Simulate 1s loading
+    setTimeout(function() {
+        var result;
+        if (question.indexOf('退款') >= 0 || question.indexOf('退') >= 0) result = mockResults.high;
+        else if (question.indexOf('保修') >= 0 || question.indexOf('质保') >= 0) result = mockResults.med;
+        else result = mockResults.low;
+
+        showResult(result);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+
+        // Add to history
+        historyData.unshift({
+            question: question,
+            similarity: result.similarity,
+            time: '刚刚',
+            result: result
+        });
+        if (historyData.length > 10) historyData.pop();
+        renderHistory();
+    }, 1000);
+}
+
+function showResult(result) {
+    document.getElementById('emptyState').style.display = 'none';
+    var area = document.getElementById('resultArea');
+    area.classList.add('show');
+
+    document.getElementById('resultQaId').textContent = result.qaId;
+    document.getElementById('simPercent').textContent = result.similarity + '%';
+
+    var badge = document.getElementById('resultBadge');
+    badge.textContent = result.badgeText;
+    badge.className = 'badge ' + result.badge;
+
+    var bar = document.getElementById('simBar');
+    var barClass;
+    if (result.similarity >= 80) barClass = 'high';
+    else if (result.similarity >= 60) barClass = 'med';
+    else barClass = 'low';
+    bar.className = 'sim-bar ' + barClass;
+    bar.style.width = '0';
+
+    document.getElementById('answerContent').textContent = result.answer;
+    var ap = document.getElementById('answerPreview');
+    ap.classList.remove('show');
+    void ap.offsetWidth;
+
+    // Animate
+    requestAnimationFrame(function() {
+        bar.style.width = result.similarity + '%';
+        ap.classList.add('show');
+    });
+}
+
+function rerunFromHistory(question, result) {
+    document.getElementById('testQuestion').value = question;
+    showResult(result);
+}
+
+function markVerified() {
+    showToast('已标记为已验证');
+}
+
+function editQA() {
+    showToast('跳转至QA编辑页面');
+}
+
+function showToast(message) {
+    var toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.remove('init');
+    toast.classList.add('show');
+    setTimeout(function() {
+        toast.classList.remove('show');
+        setTimeout(function() { toast.classList.add('init'); }, 300);
+    }, 2000);
+}
+
+// Init
+renderHistory();
+</script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA转RAG文档 - LegendAI</title>
+<style>
+:root {
+    --primary: #4F6EF7; --primary-dark: #3D5CE0; --accent: #00B8D9;
+    --accent2: #7C4DFF; --bg: #F7F8FA; --card-bg: #FFFFFF;
+    --text: #1A1D2B; --text-secondary: #6B7280; --border: #E2E8F0;
+    --card-radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+    --success: #22C55E;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px;
+}
+.card { max-width: 720px; width: 100%; background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 28px 32px 20px; border-bottom: 1px solid var(--border); }
+.card-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.card-header .subtitle { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.card-header .subtitle svg { width: 16px; height: 16px; flex-shrink: 0; }
+.card-body { padding: 32px; }
+
+/* Field group */
+.field-group { margin-bottom: 24px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-label { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.field-label .required { color: #EF4444; }
+.field-hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Input */
+.input-wrap { position: relative; }
+.input-wrap input {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--text); transition: all 0.2s;
+}
+.input-wrap input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.input-wrap input:disabled { background: #F1F5F9; color: var(--text-secondary); cursor: not-allowed; }
+.input-wrap .lock-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+.char-count { font-size: 12px; color: var(--text-secondary); text-align: right; margin-top: 4px; }
+
+/* Select */
+.select-wrap { position: relative; }
+.select-wrap select {
+    width: 100%; padding: 10px 36px 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--text); background: #fff; cursor: pointer;
+    appearance: none; transition: border-color 0.2s;
+}
+.select-wrap select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.select-wrap select:disabled { background: #F1F5F9; color: var(--text-secondary); cursor: not-allowed; }
+.select-wrap::after { content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--text-secondary); pointer-events: none; }
+
+/* Radio group */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+.radio-item:hover { border-color: var(--primary); }
+.radio-item.selected { border-color: var(--primary); background: rgba(79,110,247,0.04); color: var(--primary); font-weight: 500; }
+.radio-item input[type="radio"] { display: none; }
+.radio-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.radio-item.selected .radio-dot { border-color: var(--primary); }
+.radio-item.selected .radio-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+
+/* Preview section */
+.preview-section { margin-top: 24px; border: 1px solid var(--border); border-radius: var(--card-radius); overflow: hidden; }
+.preview-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: #F8FAFC; cursor: pointer; user-select: none;
+    transition: background 0.2s;
+}
+.preview-header:hover { background: #F1F5F9; }
+.preview-header .preview-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.preview-header .collapse-icon { transition: transform 0.3s; color: var(--text-secondary); }
+.preview-header .collapse-icon.collapsed { transform: rotate(-90deg); }
+.preview-body { padding: 16px; background: #1E1E2E; color: #CDD6F4; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; max-height: 400px; overflow-y: auto; transition: max-height 0.3s, padding 0.3s; }
+.preview-body.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; }
+.preview-body h3 { color: #89B4FA; font-size: 14px; margin: 12px 0 6px; }
+.preview-body h3:first-child { margin-top: 0; }
+.preview-body p { margin: 4px 0; }
+.preview-body .q-label { color: #A6E3A1; font-weight: 600; }
+.preview-body .a-label { color: #FAB387; font-weight: 600; }
+
+/* Progress bar */
+.progress-wrap { margin-bottom: 16px; display: none; }
+.progress-wrap .progress-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.progress-wrap .progress-bar-outer { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; }
+.progress-wrap .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 4px; width: 0%; transition: width 0.1s linear; }
+
+/* Success result */
+.success-block { text-align: center; display: none; padding: 16px 0; }
+.success-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: #DCFCE7; display: flex;
+    align-items: center; justify-content: center; margin: 0 auto 12px;
+    animation: bouncePop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+@keyframes bouncePop {
+    0% { transform: scale(0); } 50% { transform: scale(1.2); }
+    70% { transform: scale(0.9); } 100% { transform: scale(1); }
+}
+.success-icon svg { width: 28px; height: 28px; color: var(--success); }
+.success-text { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.success-detail { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+/* Buttons */
+.card-footer { padding: 20px 32px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.estimate-label { font-size: 13px; color: var(--text-secondary); }
+.estimate-label strong { color: var(--text); font-weight: 600; }
+.btn-group { display: flex; gap: 12px; }
+.btn { padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #F1F5F9; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+.btn-ghost:hover { background: rgba(79,110,247,0.06); }
+
+.hidden { display: none !important; }
+
+/* Shard count input */
+.shard-count { display: none; margin-top: 10px; }
+.shard-count input { width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
+.shard-count input:focus { outline: none; border-color: var(--primary); }
+.shard-count label { font-size: 13px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="card-header">
+        <h1>QA转RAG文档</h1>
+        <div class="subtitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            将QA库中的问答对转换为知识库文档，便于文档检索增强
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Source QA library -->
+        <div class="field-group">
+            <div class="field-label">源QA库</div>
+            <div class="input-wrap">
+                <input type="text" value="产品FAQ库" disabled readonly>
+                <span class="lock-icon" title="不可修改">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+            </div>
+        </div>
+
+        <!-- Target knowledge base -->
+        <div class="field-group">
+            <div class="field-label"><span class="required">*</span> 目标知识库</div>
+            <div class="select-wrap">
+                <select id="targetKB">
+                    <option value="">请选择目标知识库</option>
+                    <option value="product">产品文档库</option>
+                    <option value="tech">技术手册库</option>
+                    <option value="service">客服知识库</option>
+                    <option value="train">培训材料库</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Document name -->
+        <div class="field-group">
+            <div class="field-label"><span class="required">*</span> 文档名称</div>
+            <div class="input-wrap">
+                <input type="text" id="docName" maxlength="50" placeholder="QA转化-产品FAQ-20260526" value="QA转化-产品FAQ-20260526">
+            </div>
+            <div class="char-count"><span id="charCount">16</span>/50</div>
+        </div>
+
+        <!-- Conversion scope -->
+        <div class="field-group">
+            <div class="field-label">转换范围</div>
+            <div class="radio-group" id="convertScope">
+                <label class="radio-item selected" data-value="all">
+                    <input type="radio" name="scope" value="all" checked>
+                    <span class="radio-dot"></span>
+                    全部QA
+                </label>
+                <label class="radio-item" data-value="enabled">
+                    <input type="radio" name="scope" value="enabled">
+                    <span class="radio-dot"></span>
+                    仅已启用
+                </label>
+                <label class="radio-item" data-value="verified">
+                    <input type="radio" name="scope" value="verified">
+                    <span class="radio-dot"></span>
+                    仅已验证
+                </label>
+            </div>
+        </div>
+
+        <!-- Document format -->
+        <div class="field-group">
+            <div class="field-label">文档格式</div>
+            <div class="select-wrap">
+                <select id="docFormat">
+                    <option value="markdown" selected>Markdown</option>
+                    <option value="plain">纯文本</option>
+                    <option value="jsonl">JSON-L</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Document sharding -->
+        <div class="field-group">
+            <div class="field-label">文档分片</div>
+            <div class="radio-group" id="sharding">
+                <label class="radio-item selected" data-value="auto">
+                    <input type="radio" name="sharding" value="auto" checked>
+                    <span class="radio-dot"></span>
+                    自动分片
+                </label>
+                <label class="radio-item" data-value="none">
+                    <input type="radio" name="sharding" value="none">
+                    <span class="radio-dot"></span>
+                    不分片
+                </label>
+                <label class="radio-item" data-value="count">
+                    <input type="radio" name="sharding" value="count">
+                    <span class="radio-dot"></span>
+                    按QA数量分片
+                </label>
+            </div>
+            <div class="field-hint">自动分片：系统根据内容长度自动切分（推荐）</div>
+            <div class="shard-count" id="shardCountWrap">
+                <label>每</label>
+                <input type="number" id="shardCount" value="50" min="10" max="500">
+                <label>条一片</label>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-section" id="previewSection">
+            <div class="preview-header" onclick="togglePreview()">
+                <span class="preview-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    转换预览
+                </span>
+                <svg class="collapse-icon" id="collapseIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="preview-body" id="previewBody">
+<h3>### 1. 如何重置密码？</h3>
+<p class="q-label">**Q:** 如何重置密码？</p>
+<p class="a-label">**A:** 请前往设置-安全中心-修改密码页面，按照提示完成密码重置操作。如忘记当前密码，可通过绑定手机号或邮箱进行验证后重置。</p>
+
+<h3>### 2. 支持哪些支付方式？</h3>
+<p class="q-label">**Q:** 支持哪些支付方式？</p>
+<p class="a-label">**A:** 我们支持多种支付方式，包括微信支付、支付宝、银联卡以及 Apple Pay。不同支付方式可能有不同限额，详见支付帮助页面。</p>
+
+<h3>### 3. 如何申请退款？</h3>
+<p class="q-label">**Q:** 如何申请退款？</p>
+<p class="a-label">**A:** 请在订单详情页点击"申请退款"按钮，填写退款原因后提交审核。审核通过后，款项将在3-7个工作日内原路返回。部分特殊商品可能不支持退款，请留意商品页标注。</p>
+
+<p style="color:#6C7086;margin-top:16px;font-style:italic;">... 共 128 条QA</p>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-wrap" id="progressWrap">
+            <div class="progress-info">
+                <span>正在转换...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-outer">
+                <div class="progress-bar-inner" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- Success result -->
+        <div class="success-block" id="successBlock">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="success-text">转换成功！</div>
+            <div class="success-detail">已生成文档「<strong id="resultDocName">QA转化-产品FAQ-20260526</strong>」，共 <strong>128</strong> 条QA</div>
+            <a href="#" class="btn btn-ghost" onclick="event.preventDefault(); alert('跳转到知识库');">前往知识库查看 &rarr;</a>
+        </div>
+    </div>
+    <div class="card-footer" id="footerNormal">
+        <div class="estimate-label">将转换 <strong>128</strong> 条QA为 <strong>1</strong> 个文档</div>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="handleCancel()">取消</button>
+            <button class="btn btn-primary" id="convertBtn" onclick="startConvert()">开始转换</button>
+        </div>
+    </div>
+    <div class="card-footer hidden" id="footerDone">
+        <div></div>
+        <button class="btn btn-secondary" onclick="resetForm()">返回</button>
+    </div>
+</div>
+
+<script>
+// Radio button clicks for all radio groups
+document.querySelectorAll('.radio-group').forEach(group => {
+    group.addEventListener('click', (e) => {
+        const item = e.target.closest('.radio-item');
+        if (!item) return;
+        group.querySelectorAll('.radio-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        item.querySelector('input').checked = true;
+
+        // Show/hide shard count input
+        if (group.id === 'sharding') {
+            document.getElementById('shardCountWrap').style.display = item.dataset.value === 'count' ? 'block' : 'none';
+            const hint = group.parentElement.querySelector('.field-hint');
+            if (hint) {
+                hint.textContent = item.dataset.value === 'auto' ? '自动分片：系统根据内容长度自动切分（推荐）'
+                    : item.dataset.value === 'none' ? '不分片：所有内容保存为单个完整文档'
+                    : '按QA数量分片：按指定条数切分为多个文档片段';
+            }
+        }
+    });
+});
+
+// Target KB change updates document name
+document.getElementById('targetKB').addEventListener('change', function() {
+    const kbNames = { product: '产品文档库', tech: '技术手册库', service: '客服知识库', train: '培训材料库' };
+    const kbName = kbNames[this.value] || '';
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const docName = kbName ? 'QA转化-' + kbName.substring(0, kbName.length - 1) + '-' + today : '';
+    const input = document.getElementById('docName');
+    input.value = docName;
+    input.placeholder = docName || 'QA转化-产品FAQ-20260526';
+    updateCharCount();
+});
+
+// Character count
+document.getElementById('docName').addEventListener('input', updateCharCount);
+function updateCharCount() {
+    const len = document.getElementById('docName').value.length;
+    document.getElementById('charCount').textContent = len;
+}
+
+// Preview toggle
+function togglePreview() {
+    const body = document.getElementById('previewBody');
+    const icon = document.getElementById('collapseIcon');
+    body.classList.toggle('collapsed');
+    icon.classList.toggle('collapsed');
+}
+
+// Progress animation
+function startConvert() {
+    const targetKB = document.getElementById('targetKB').value;
+    if (!targetKB) { alert('请选择目标知识库'); return; }
+    const docName = document.getElementById('docName').value.trim();
+    if (!docName) { alert('请输入文档名称'); return; }
+
+    const btn = document.getElementById('convertBtn');
+    btn.disabled = true;
+    btn.textContent = '转换中...';
+
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+
+    progressWrap.style.display = 'block';
+    document.getElementById('previewSection').classList.add('hidden');
+    document.getElementById('footerNormal').querySelector('.estimate-label').style.display = 'none';
+
+    let percent = 0;
+    const interval = setInterval(() => {
+        percent += Math.random() * 15 + 5;
+        if (percent >= 100) {
+            percent = 100;
+            clearInterval(interval);
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+
+            // Show success
+            setTimeout(() => {
+                progressWrap.style.display = 'none';
+                document.getElementById('resultDocName').textContent = docName;
+                document.getElementById('successBlock').style.display = 'block';
+                document.getElementById('footerNormal').classList.add('hidden');
+                document.getElementById('footerDone').classList.remove('hidden');
+            }, 500);
+        } else {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = Math.round(percent) + '%';
+        }
+    }, 200);
+}
+
+function handleCancel() {
+    alert('取消操作');
+}
+
+function resetForm() {
+    document.getElementById('targetKB').value = '';
+    document.getElementById('docName').value = 'QA转化-产品FAQ-20260526';
+    updateCharCount();
+    document.getElementById('previewSection').classList.remove('hidden');
+    document.getElementById('successBlock').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('footerNormal').classList.remove('hidden');
+    document.getElementById('footerDone').classList.add('hidden');
+    document.getElementById('convertBtn').disabled = false;
+    document.getElementById('convertBtn').textContent = '开始转换';
+    document.getElementById('footerNormal').querySelector('.estimate-label').style.display = '';
+    const previewBody = document.getElementById('previewBody');
+    previewBody.classList.remove('collapsed');
+    document.getElementById('collapseIcon').classList.remove('collapsed');
+}
+</script>
+</body>
+</html>

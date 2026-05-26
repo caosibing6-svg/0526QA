@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA问题管理 - LegendAI</title>
+<style>
+:root {
+  --primary: #4F6EF7; --primary-dark: #3D5CE0;
+  --accent: #00B8D9; --accent2: #7C4DFF;
+  --bg: #F7F8FA; --card-bg: #FFFFFF;
+  --text: #1A1D2B; --text-secondary: #6B7280;
+  --border: #E2E8F0; --card-radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+  --danger: #EF4444; --danger-light: #FEE2E2;
+  --success: #10B981; --success-light: #D1FAE5;
+  --warning: #F59E0B; --warning-light: #FEF3C7;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+/* Header */
+.header { height:56px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; position:fixed; top:0; left:0; right:0; z-index:100; }
+.header-logo { display:flex; align-items:center; gap:10px; }
+.header-logo span { font-size:16px; font-weight:600; color:var(--text); }
+.header-breadcrumb { margin-left:24px; display:flex; align-items:center; gap:8px; font-size:14px; color:var(--text-secondary); }
+.header-breadcrumb .sep { color:var(--border); }
+.header-breadcrumb .current { color:var(--text); font-weight:500; }
+.header-right { margin-left:auto; display:flex; align-items:center; gap:16px; }
+.header-user { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent2)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:600; cursor:pointer; }
+
+/* Sidebar */
+.sidebar { width:240px; background:#fff; border-right:1px solid var(--border); position:fixed; top:56px; left:0; bottom:0; overflow-y:auto; z-index:90; }
+.nav-group { padding:8px 0; }
+.nav-group-title { padding:8px 20px; font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:9px 20px; font-size:14px; color:var(--text-secondary); cursor:pointer; transition:all .15s; border-left:3px solid transparent; }
+.nav-item:hover { background:var(--bg); color:var(--text); }
+.nav-item.active { background:rgba(79,110,247,0.06); color:var(--primary); border-left-color:var(--primary); font-weight:500; }
+.nav-item svg { width:18px; height:18px; flex-shrink:0; }
+.nav-group+.nav-group { border-top:1px solid var(--border); }
+
+/* Main */
+.main { margin-left:240px; margin-top:56px; padding:24px; min-height:calc(100vh - 56px); }
+
+/* Breadcrumb bar */
+.breadcrumb-bar { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.breadcrumb-back { font-size:14px; color:var(--primary); cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:4px; }
+.breadcrumb-back:hover { text-decoration:underline; }
+.breadcrumb-lib-name { font-size:18px; font-weight:600; color:var(--text); }
+.breadcrumb-count { font-size:12px; background:rgba(79,110,247,0.1); color:var(--primary); padding:2px 10px; border-radius:12px; font-weight:500; }
+
+/* Toolbar */
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+.toolbar-left { display:flex; gap:8px; }
+.toolbar-right { display:flex; align-items:center; gap:12px; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--text); transition:all .15s; white-space:nowrap; }
+.btn:hover { border-color:var(--primary); color:var(--primary); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; pointer-events:none; }
+.btn-primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-primary:hover { background:var(--primary-dark); border-color:var(--primary-dark); color:#fff; }
+.btn-danger { color:var(--danger); border-color:var(--danger-light); }
+.btn-danger:hover { background:var(--danger-light); border-color:var(--danger); }
+.btn-ghost { border:none; background:none; color:var(--primary); padding:4px 8px; }
+.btn-ghost:hover { background:rgba(79,110,247,0.06); }
+.btn-ghost.danger { color:var(--danger); }
+.btn-ghost.danger:hover { background:var(--danger-light); }
+
+/* Segmented */
+.segmented { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.segmented-btn { padding:6px 14px; font-size:13px; border:none; background:#fff; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
+.segmented-btn.active { background:var(--primary); color:#fff; }
+
+/* Search */
+.search-box { display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; padding:0 12px; background:#fff; }
+.search-box input { border:none; outline:none; padding:7px 8px; font-size:13px; width:200px; font-family:inherit; }
+.search-box svg { color:var(--text-secondary); flex-shrink:0; }
+
+/* Stats */
+.stats-row { display:flex; gap:16px; margin-bottom:20px; }
+.stat-card { background:#fff; border-radius:var(--card-radius); padding:16px 24px; flex:1; box-shadow:var(--shadow); display:flex; align-items:center; gap:16px; }
+.stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.stat-icon.all { background:rgba(79,110,247,0.1); color:var(--primary); }
+.stat-icon.on { background:var(--success-light); color:var(--success); }
+.stat-icon.off { background:var(--danger-light); color:var(--danger); }
+.stat-info { display:flex; flex-direction:column; }
+.stat-label { font-size:13px; color:var(--text-secondary); }
+.stat-value { font-size:24px; font-weight:700; }
+
+/* Table */
+.table-card { background:#fff; border-radius:var(--card-radius); box-shadow:var(--shadow); overflow:hidden; }
+table { width:100%; border-collapse:collapse; }
+thead { background:var(--bg); }
+th { padding:12px 16px; font-size:12px; font-weight:600; color:var(--text-secondary); text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:hover td { background:rgba(79,110,247,0.02); }
+th:first-child, td:first-child { width:40px; text-align:center; }
+input[type="checkbox"] { width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+.question-text { font-weight:500; color:var(--text); max-width:280px; }
+.similar-badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:12px; font-size:12px; background:rgba(79,110,247,0.1); color:var(--primary); font-weight:500; }
+.answer-preview { color:var(--text-secondary); max-width:240px; }
+.time-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; background:var(--bg); color:var(--text-secondary); }
+.time-tag.permanent { background:rgba(107,114,128,0.08); }
+.status-toggle { display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+.toggle-track { width:36px; height:20px; border-radius:10px; background:#D1D5DB; position:relative; transition:background .2s; }
+.toggle-track.on { background:var(--success); }
+.toggle-thumb { width:16px; height:16px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+.toggle-track.on .toggle-thumb { left:18px; }
+.status-text { font-size:13px; font-weight:500; }
+.status-text.on { color:var(--success); }
+.status-text.off { color:var(--danger); }
+.action-btns { display:flex; gap:2px; }
+
+/* Pagination */
+.pagination { display:flex; align-items:center; justify-content:space-between; padding:16px; font-size:13px; color:var(--text-secondary); }
+.page-btns { display:flex; gap:4px; }
+.page-btn { width:32px; height:32px; border-radius:6px; border:1px solid var(--border); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; transition:all .15s; }
+.page-btn:hover { border-color:var(--primary); color:var(--primary); }
+.page-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.page-btn.disabled { opacity:0.3; cursor:not-allowed; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; justify-content:center; align-items:flex-start; padding-top:60px; overflow-y:auto; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:16px; width:90%; max-height:80vh; display:flex; flex-direction:column; animation:modalIn .2s; }
+@keyframes modalIn { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+.modal.wide { max-width:800px; }
+.modal.medium { max-width:720px; }
+.modal.normal { max-width:540px; }
+.modal.small { max-width:440px; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); }
+.modal-title { font-size:16px; font-weight:600; }
+.modal-close { width:32px; height:32px; border-radius:8px; border:none; background:none; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); }
+.modal-close:hover { background:var(--bg); }
+.modal-body { padding:24px; overflow-y:auto; flex:1; }
+.modal-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:16px 24px; border-top:1px solid var(--border); }
+
+/* Form */
+.form-group { margin-bottom:20px; }
+.form-label { display:block; font-size:13px; font-weight:500; margin-bottom:6px; color:var(--text); }
+.form-label .required { color:var(--danger); margin-left:2px; }
+.form-input, .form-textarea, .form-select { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; outline:none; transition:border-color .15s; }
+.form-input:focus, .form-textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,110,247,0.1); }
+.form-textarea { resize:vertical; min-height:80px; }
+.char-count { text-align:right; font-size:12px; color:var(--text-secondary); margin-top:4px; }
+.form-input.error, .form-textarea.error { border-color:var(--danger); }
+
+/* Similar questions */
+.similar-list { display:flex; flex-direction:column; gap:8px; }
+.similar-row { display:flex; gap:8px; align-items:flex-start; }
+.similar-row textarea { flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; outline:none; resize:none; height:36px; }
+.similar-row textarea:focus { border-color:var(--primary); }
+.similar-remove { width:32px; height:36px; border-radius:8px; border:none; background:var(--danger-light); color:var(--danger); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.similar-remove:hover { background:var(--danger); color:#fff; }
+.add-similar-btn { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--primary); cursor:pointer; border:none; background:none; padding:4px 0; }
+.add-similar-btn:hover { text-decoration:underline; }
+
+/* Formatting toolbar */
+.format-toolbar { display:flex; gap:4px; padding:6px 8px; border:1px solid var(--border); border-bottom:none; border-radius:8px 8px 0 0; background:var(--bg); }
+.format-btn { width:28px; height:28px; border:none; border-radius:4px; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-secondary); }
+.format-btn:hover { background:#fff; color:var(--text); }
+.format-sep { width:1px; background:var(--border); margin:4px 4px; }
+.answer-area { border-radius:0 0 8px 8px !important; border-top:none !important; }
+
+/* Radio group */
+.radio-group { display:flex; gap:24px; }
+.radio-item { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; }
+.radio-item input { accent-color:var(--primary); }
+.date-picker-inline { margin-top:8px; }
+
+/* Toggle */
+.toggle-row { display:flex; align-items:center; gap:12px; }
+
+/* Stepper */
+.stepper { display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.step-item { display:flex; align-items:center; gap:8px; }
+.step-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; border:2px solid var(--border); color:var(--text-secondary); }
+.step-num.active { border-color:var(--primary); background:var(--primary); color:#fff; }
+.step-num.done { border-color:var(--success); background:var(--success); color:#fff; }
+.step-label { font-size:13px; color:var(--text-secondary); }
+.step-label.active { color:var(--text); font-weight:500; }
+.step-line { width:40px; height:2px; background:var(--border); margin:0 8px; }
+.step-line.done { background:var(--success); }
+
+/* Upload area */
+.upload-area { border:2px dashed var(--border); border-radius:12px; padding:40px; text-align:center; cursor:pointer; transition:all .15s; }
+.upload-area:hover { border-color:var(--primary); background:rgba(79,110,247,0.02); }
+.upload-area.dragover { border-color:var(--primary); background:rgba(79,110,247,0.05); }
+.upload-icon { font-size:40px; margin-bottom:8px; color:var(--text-secondary); }
+.upload-text { font-size:14px; color:var(--text-secondary); }
+.upload-hint { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+.upload-filename { margin-top:12px; font-size:13px; color:var(--primary); font-weight:500; }
+
+/* Verify */
+.verify-input-row { display:flex; gap:8px; align-items:flex-start; }
+.verify-input-row textarea { flex:1; }
+.verify-result { margin-top:20px; border:1px solid var(--border); border-radius:12px; padding:20px; }
+.verify-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.verify-row:last-child { margin-bottom:0; }
+.verify-label { font-size:13px; color:var(--text-secondary); width:80px; flex-shrink:0; }
+.verify-value { font-size:14px; }
+.sim-bar { height:8px; border-radius:4px; background:var(--bg); flex:1; max-width:200px; overflow:hidden; }
+.sim-bar-fill { height:100%; border-radius:4px; transition:width .5s; }
+.sim-bar-fill.green { background:var(--success); }
+.sim-bar-fill.yellow { background:var(--warning); }
+.sim-bar-fill.red { background:var(--danger); }
+.verify-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600; }
+.verify-badge.pass { background:var(--success-light); color:var(--success); }
+.verify-badge.fail { background:var(--danger-light); color:var(--danger); }
+.answer-box { background:var(--bg); border-radius:8px; padding:12px; font-size:13px; line-height:1.6; margin-top:8px; }
+
+/* Success animation */
+.success-anim { text-align:center; padding:20px; }
+.checkmark-circle { width:64px; height:64px; border-radius:50%; background:var(--success-light); display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; animation:scaleIn .3s; }
+@keyframes scaleIn { from { transform:scale(0); } to { transform:scale(1); } }
+.checkmark-circle svg { color:var(--success); }
+.success-text { font-size:16px; font-weight:500; }
+
+/* Loading spinner */
+.spinner { width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin .6s linear infinite; margin:20px auto; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Toast */
+.toast-container { position:fixed; top:72px; right:24px; z-index:300; display:flex; flex-direction:column; gap:8px; }
+.toast { padding:12px 20px; border-radius:8px; font-size:13px; font-weight:500; box-shadow:0 4px 12px rgba(0,0,0,0.12); animation:toastIn .25s; display:flex; align-items:center; gap:8px; }
+.toast.success { background:var(--success-light); color:var(--success); }
+.toast.error { background:var(--danger-light); color:var(--danger); }
+.toast.info { background:rgba(79,110,247,0.1); color:var(--primary); }
+@keyframes toastIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+/* Checkbox column */
+.col-cb { width:40px; text-align:center; }
+.col-question { min-width:200px; }
+.col-similar { width:80px; text-align:center; }
+.col-answer { min-width:180px; }
+.col-time { width:110px; }
+.col-status { width:120px; }
+.col-action { width:160px; }
+
+/* Preview table in import step 3 */
+.preview-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:12px; }
+.preview-table th, .preview-table td { padding:6px 10px; border:1px solid var(--border); text-align:left; }
+.preview-table th { background:var(--bg); font-weight:600; color:var(--text-secondary); }
+.import-summary { margin-top:16px; padding:12px; background:var(--success-light); border-radius:8px; font-size:13px; color:var(--success); display:flex; align-items:center; gap:8px; }
+
+/* Export checkboxes */
+.export-checks { display:flex; flex-wrap:wrap; gap:12px; }
+.export-check { display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer; }
+.export-check input { accent-color:var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
+      <path d="M14 0L27 7.5V17.5L14 25L1 17.5V7.5L14 0Z" fill="url(#lg1)" opacity="0.9"/>
+      <path d="M14 4L23 9.5V15.5L14 21L5 15.5V9.5L14 4Z" fill="url(#lg2)" opacity="0.7"/>
+      <circle cx="14" cy="12" r="3" fill="#fff" opacity="0.9"/>
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="28" y2="32"><stop offset="0%" stop-color="#4F6EF7"/><stop offset="100%" stop-color="#7C4DFF"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="28" y2="32"><stop offset="0%" stop-color="#00B8D9"/><stop offset="100%" stop-color="#4F6EF7"/></linearGradient>
+      </defs>
+    </svg>
+    <span>LegendAI</span>
+  </div>
+  <div class="header-breadcrumb">
+    <span class="sep">/</span>
+    <span>QA问答</span>
+    <span class="sep">/</span>
+    <span class="current">QA问题管理</span>
+  </div>
+  <div class="header-right">
+    <div class="header-user" title="用户">U</div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-group">
+    <div class="nav-group-title">概览</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      工作台
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">知识管理</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      知识库
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      文档管理
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">QA问答</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg>
+      QA库管理
+    </div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      QA问题管理
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">智能体</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      智能体配置
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      流程编排
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">系统</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      系统设置
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+      数据运营
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+  <!-- Breadcrumb bar -->
+  <div class="breadcrumb-bar">
+    <a class="breadcrumb-back" onclick="showToast('返回QA库','info')">&#8592; 返回QA库</a>
+    <span class="breadcrumb-lib-name">产品功能FAQ</span>
+    <span class="breadcrumb-count" id="totalCountBadge">238条</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn btn-primary" onclick="openEditModal()">+ 新增QA</button>
+      <button class="btn" onclick="openImportModal()">&#128229; 批量导入</button>
+      <button class="btn" id="exportBtn" onclick="openExportModal()" disabled>&#128228; 批量导出</button>
+      <button class="btn btn-danger" id="batchDeleteBtn" onclick="batchDelete()" disabled>&#128465; 批量删除</button>
+    </div>
+    <div class="toolbar-right">
+      <div class="segmented" id="statusFilter">
+        <button class="segmented-btn active" data-filter="all" onclick="filterStatus('all',this)">全部</button>
+        <button class="segmented-btn" data-filter="on" onclick="filterStatus('on',this)">启用</button>
+        <button class="segmented-btn" data-filter="off" onclick="filterStatus('off',this)">禁用</button>
+      </div>
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" placeholder="搜索问题..." id="searchInput" oninput="onSearch()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon all">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div class="stat-info"><span class="stat-label">全部</span><span class="stat-value" id="statAll">238</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon on">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      </div>
+      <div class="stat-info"><span class="stat-label">已启用</span><span class="stat-value" id="statOn">201</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon off">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <div class="stat-info"><span class="stat-label">已禁用</span><span class="stat-value" id="statOff">37</span></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-cb"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+          <th class="col-question">问题</th>
+          <th class="col-similar">相似问题</th>
+          <th class="col-answer">答案预览</th>
+          <th class="col-time">生效时间</th>
+          <th class="col-status">状态</th>
+          <th class="col-action">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="pagination">
+      <span id="pageInfo">共 238 条，每页 10 条</span>
+      <div class="page-btns" id="pageBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Modal: 新增/编辑QA -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title" id="editModalTitle">新增QA</span>
+      <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">问题<span class="required">*</span></label>
+        <input class="form-input" id="editQuestion" maxlength="200" placeholder="请输入问题" oninput="updateCharCount('editQuestion','charQ',200)">
+        <div class="char-count"><span id="charQ">0</span>/200</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">相似问题</label>
+        <div class="similar-list" id="similarList"></div>
+        <button class="add-similar-btn" onclick="addSimilarRow()" id="addSimilarBtn">+ 添加相似问题</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">答案<span class="required">*</span></label>
+        <div class="format-toolbar">
+          <button class="format-btn" title="加粗" onclick="wrapText('editAnswer','**','**')"><b>B</b></button>
+          <button class="format-btn" title="斜体" onclick="wrapText('editAnswer','*','*')"><i>I</i></button>
+          <div class="format-sep"></div>
+          <button class="format-btn" title="列表" onclick="insertList('editAnswer')">&#8226;</button>
+        </div>
+        <textarea class="form-textarea answer-area" id="editAnswer" maxlength="5000" rows="6" placeholder="请输入答案" oninput="updateCharCount('editAnswer','charA',5000)"></textarea>
+        <div class="char-count"><span id="charA">0</span>/5000</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">生效时间</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="expireType" value="permanent" checked onchange="toggleDatePicker()"> 永久有效</label>
+          <label class="radio-item"><input type="radio" name="expireType" value="custom" onchange="toggleDatePicker()"> 自定义截止日期</label>
+        </div>
+        <div class="date-picker-inline" id="datePickerRow" style="display:none;margin-top:8px;">
+          <input type="date" class="form-input" id="expireDate" style="width:220px;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">状态</label>
+        <div class="toggle-row">
+          <div class="status-toggle" onclick="toggleEditStatus()">
+            <div class="toggle-track on" id="editStatusTrack"><div class="toggle-thumb"></div></div>
+            <span class="status-text on" id="editStatusText">启用</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">排序号</label>
+        <input type="number" class="form-input" id="editSort" placeholder="选填，数字越小越靠前" style="width:220px;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('editModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveQA()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 删除确认 -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal small">
+    <div class="modal-header">
+      <span class="modal-title">确认删除</span>
+      <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;line-height:1.8;" id="deleteMsg">确定要删除这条QA吗？删除后不可恢复。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('deleteModal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: 批量导入 -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal medium">
+    <div class="modal-header">
+      <span class="modal-title">批量导入</span>
+      <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Stepper -->
+      <div class="stepper" id="importStepper"></div>
+      <!-- Step 1 -->
+      <div class="import-step" id="importStep1">
+        <p style="font-size:14px;line-height:1.8;margin-bottom:16px;">请下载导入模板，按格式填写QA数据后上传。<br>模板包含：问题、相似问题、答案、状态、生效时间等字段。</p>
+        <button class="btn btn-primary" onclick="showToast('模板已下载','success')">&#128229; 下载Excel模板</button>
+      </div>
+      <!-- Step 2 -->
+      <div class="import-step" id="importStep2" style="display:none;">
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">&#128196;</div>
+          <div class="upload-text">点击或拖拽文件到此处上传</div>
+          <div class="upload-hint">支持 .xlsx、.csv 格式</div>
+          <div class="upload-filename" id="uploadFilename"></div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none;" onchange="onFileSelected(this)">
+      </div>
+      <!-- Step 3 -->
+      <div class="import-step" id="importStep3" style="display:none;">
+        <table class="preview-table">
+          <thead><tr><th>#</th><th>问题</th><th>答案</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>如何重置密码？</td><td>点击登录页"忘记密码"...</td><td>启用</td></tr>
+            <tr><td>2</td><td>如何修改个人信息？</td><td>进入个人中心→编辑...</td><td>启用</td></tr>
+            <tr><td>3</td><td>支持多语言吗？</td><td>支持中英日韩四...</td><td>启用</td></tr>
+            <tr><td>4</td><td>如何升级套餐？</td><td>进入套餐管理→...</td><td>启用</td></tr>
+            <tr><td>5</td><td>数据如何备份？</td><td>系统每日自动备份...</td><td>启用</td></tr>
+          </tbody>
+        </table>
+        <div class="import-summary">&#9989; 共检测到 24 条数据，0 条错误，24 条可导入</div>
+      </div>
+      <!-- Step 4 -->
+      <div class="import-step" id="importStep4" style="display:none;">
+        <div class="success-anim">
+          <div class="checkmark-circle">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div class="success-text">成功导入 24 条QA问答</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="importFooter"></div>
+  </div>
+</div>
+
+<!-- Modal: 批量导出 -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal normal">
+    <div class="modal-header">
+      <span class="modal-title">批量导出</span>
+      <button class="modal-close" onclick="closeModal('exportModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">导出格式</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="exportFormat" value="excel" checked> Excel</label>
+          <label class="radio-item"><input type="radio" name="exportFormat" value="csv"> CSV</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">导出范围</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="exportScope" value="all" checked> 全部</label>
+          <label class="radio-item"><input type="radio" name="exportScope" value="page"> 当前页</label>
+          <label class="radio-item"><input type="radio" name="exportScope" value="selected"> 已选中</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">包含字段</label>
+        <div class="export-checks">
+          <label class="export-check"><input type="checkbox" checked> 问题</label>
+          <label class="export-check"><input type="checkbox" checked> 相似问题</label>
+          <label class="export-check"><input type="checkbox" checked> 答案</label>
+          <label class="export-check"><input type="checkbox" checked> 状态</label>
+          <label class="export-check"><input type="checkbox" checked> 时间</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('exportModal')">取消</button>
+      <button class="btn btn-primary" onclick="doExport()">确认导出</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: QA验证 -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title">QA验证</span>
+      <button class="modal-close" onclick="closeModal('verifyModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">输入测试问题</label>
+        <div class="verify-input-row">
+          <textarea class="form-textarea" id="verifyInput" rows="2" placeholder="请输入测试问题，验证是否能正确匹配QA..."></textarea>
+          <button class="btn btn-primary" onclick="runVerify()" id="verifyBtn">验证</button>
+        </div>
+      </div>
+      <div id="verifyLoading" style="display:none;"><div class="spinner"></div></div>
+      <div id="verifyResult" style="display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="showToast('已标记为已验证','success')" id="verifyMarkBtn" disabled>标记已验证</button>
+      <button class="btn" onclick="closeModal('verifyModal');openEditModal(verifyCurrentId)" id="verifyEditBtn" disabled>修改QA</button>
+      <button class="btn" onclick="closeModal('verifyModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// === DATA ===
+let qaData = [
+  { id:1, question:'如何上传本地文档到知识库？', similar:['怎样上传文档？','本地文件怎么传？','知识库上传方法'], answer:'进入知识库管理→本地文档上传，选择文件后点击确认上传即可。支持批量上传，单文件最大50MB。', expire:'永久有效', status:'on', sort:1 },
+  { id:2, question:'支持哪些文档格式？', similar:['支持什么格式？'], answer:'系统支持PDF、Word、TXT、Excel、PPT等常见文档格式的解析和导入。', expire:'永久有效', status:'on', sort:2 },
+  { id:3, question:'文档上传失败怎么办？', similar:['上传报错了','文件传不上去','上传超时','文档导入失败'], answer:'请检查文件大小是否超过50MB，格式是否支持，网络是否稳定。如仍有问题请联系技术支持。', expire:'永久有效', status:'on', sort:3 },
+  { id:4, question:'知识库版本如何管理？', similar:['版本回退方法'], answer:'在知识库状态管理页面可以查看历史版本，支持版本回退和对比。每次更新会自动生成新版本。', expire:'永久有效', status:'on', sort:4 },
+  { id:5, question:'API调用如何鉴权？', similar:['鉴权方式有哪些'], answer:'使用Bearer Token方式进行API鉴权，在请求Header中添加Authorization: Bearer <token>。', expire:'永久有效', status:'on', sort:5 },
+  { id:6, question:'Token消耗如何计算？', similar:['计费方式','Token怎么算','消耗统计'], answer:'按实际输入+输出token数计算，不同模型单价不同。可在数据运营→用量统计中查看详情。', expire:'2024-12-31', status:'on', sort:6 },
+  { id:7, question:'如何配置ASR识别语言？', similar:['语音识别语言设置'], answer:'在智能体配置中心→ASR配置页面，可以选择识别语言和模型，支持中英日韩等多种语言。', expire:'永久有效', status:'off', sort:7 },
+  { id:8, question:'流程编排节点有哪些类型？', similar:['编排节点','流程节点类型','有哪些节点','条件判断节点','API调用节点'], answer:'支持开始/条件判断/API调用/知识库查询/回复/结束等多种节点类型，可灵活组合。', expire:'永久有效', status:'on', sort:8 },
+  { id:9, question:'如何查看AI调用统计？', similar:['调用统计在哪看'], answer:'进入数据运营→AI调用统计，可按时间、模型、接口等维度查看调用量和成功率。', expire:'永久有效', status:'on', sort:9 },
+  { id:10, question:'智能体如何接入TTS？', similar:['TTS配置','语音合成接入','怎么加语音合成'], answer:'在配置中心→TTS配置页面，选择语音模型和参数，保存后即可在对话流程中使用语音合成。', expire:'永久有效', status:'on', sort:10 },
+];
+let nextId = 11;
+let currentPage = 1;
+const pageSize = 10;
+let currentFilter = 'all';
+let searchQuery = '';
+let selectedIds = new Set();
+let editingId = null;
+let deleteTargetId = null;
+let deleteTargetIds = null;
+let importStep = 1;
+let verifyCurrentId = null;
+let editStatusOn = true;
+
+// === RENDER ===
+function getFilteredData() {
+  let d = qaData;
+  if (currentFilter === 'on') d = d.filter(x => x.status === 'on');
+  if (currentFilter === 'off') d = d.filter(x => x.status === 'off');
+  if (searchQuery) { const q = searchQuery.toLowerCase(); d = d.filter(x => x.question.toLowerCase().includes(q) || x.answer.toLowerCase().includes(q)); }
+  return d;
+}
+
+function renderTable() {
+  const data = getFilteredData();
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageData = data.slice(start, start + pageSize);
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  pageData.forEach(item => {
+    const checked = selectedIds.has(item.id) ? 'checked' : '';
+    const preview = item.answer.length > 40 ? item.answer.substring(0, 40) + '...' : item.answer;
+    const timeClass = item.expire === '永久有效' ? 'time-tag permanent' : 'time-tag';
+    const isOn = item.status === 'on';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-cb"><input type="checkbox" data-id="${item.id}" ${checked} onchange="toggleRow(${item.id})"></td>
+      <td class="col-question"><span class="question-text">${escHtml(item.question)}</span></td>
+      <td class="col-similar"><span class="similar-badge">${item.similar.length}条</span></td>
+      <td class="col-answer"><span class="answer-preview">${escHtml(preview)}</span></td>
+      <td class="col-time"><span class="${timeClass}">${escHtml(item.expire)}</span></td>
+      <td class="col-status">
+        <div class="status-toggle" onclick="toggleStatus(${item.id})">
+          <div class="toggle-track ${isOn?'on':''}"><div class="toggle-thumb"></div></div>
+          <span class="status-text ${isOn?'on':'off'}">${isOn?'启用':'禁用'}</span>
+        </div>
+      </td>
+      <td class="col-action">
+        <div class="action-btns">
+          <button class="btn-ghost" onclick="openEditModal(${item.id})">编辑</button>
+          <button class="btn-ghost danger" onclick="openDeleteModal(${item.id})">删除</button>
+          <button class="btn-ghost" onclick="openVerifyModal(${item.id})">验证</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  // Pagination
+  document.getElementById('pageInfo').textContent = `共 ${total} 条，每页 ${pageSize} 条`;
+  const pageBtns = document.getElementById('pageBtns');
+  pageBtns.innerHTML = '';
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'page-btn' + (currentPage <= 1 ? ' disabled' : '');
+  prevBtn.innerHTML = '&#8249;';
+  if (currentPage > 1) prevBtn.onclick = () => { currentPage--; renderTable(); };
+  pageBtns.appendChild(prevBtn);
+  for (let i = 1; i <= totalPages; i++) {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (i === currentPage ? ' active' : '');
+    b.textContent = i;
+    b.onclick = () => { currentPage = i; renderTable(); };
+    pageBtns.appendChild(b);
+  }
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'page-btn' + (currentPage >= totalPages ? ' disabled' : '');
+  nextBtn.innerHTML = '&#8250;';
+  if (currentPage < totalPages) nextBtn.onclick = () => { currentPage++; renderTable(); };
+  pageBtns.appendChild(nextBtn);
+  updateStats();
+  updateBatchButtons();
+}
+
+function updateStats() {
+  const all = qaData.length;
+  const on = qaData.filter(x => x.status === 'on').length;
+  const off = all - on;
+  document.getElementById('statAll').textContent = all;
+  document.getElementById('statOn').textContent = on;
+  document.getElementById('statOff').textContent = off;
+  document.getElementById('totalCountBadge').textContent = all + '条';
+}
+
+function updateBatchButtons() {
+  document.getElementById('exportBtn').disabled = selectedIds.size === 0;
+  document.getElementById('batchDeleteBtn').disabled = selectedIds.size === 0;
+}
+
+// === ACTIONS ===
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  const data = getFilteredData();
+  const start = (currentPage - 1) * pageSize;
+  const pageData = data.slice(start, start + pageSize);
+  if (checked) { pageData.forEach(x => selectedIds.add(x.id)); }
+  else { pageData.forEach(x => selectedIds.delete(x.id)); }
+  renderTable();
+}
+
+function toggleRow(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  updateBatchButtons();
+}
+
+function filterStatus(filter, btn) {
+  currentFilter = filter;
+  currentPage = 1;
+  document.querySelectorAll('#statusFilter .segmented-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function onSearch() {
+  searchQuery = document.getElementById('searchInput').value.trim();
+  currentPage = 1;
+  renderTable();
+}
+
+function toggleStatus(id) {
+  const item = qaData.find(x => x.id === id);
+  if (!item) return;
+  item.status = item.status === 'on' ? 'off' : 'on';
+  showToast(item.status === 'on' ? '已启用' : '已禁用', item.status === 'on' ? 'success' : 'info');
+  renderTable();
+}
+
+// === MODALS ===
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// Edit Modal
+function openEditModal(id) {
+  editingId = id || null;
+  document.getElementById('editModalTitle').textContent = id ? '编辑QA' : '新增QA';
+  const similarList = document.getElementById('similarList');
+  similarList.innerHTML = '';
+  if (id) {
+    const item = qaData.find(x => x.id === id);
+    document.getElementById('editQuestion').value = item.question;
+    document.getElementById('editAnswer').value = item.answer;
+    editStatusOn = item.status === 'on';
+    item.similar.forEach(s => addSimilarRow(s));
+    if (item.expire === '永久有效') {
+      document.querySelector('input[name="expireType"][value="permanent"]').checked = true;
+      document.getElementById('datePickerRow').style.display = 'none';
+    } else {
+      document.querySelector('input[name="expireType"][value="custom"]').checked = true;
+      document.getElementById('datePickerRow').style.display = 'block';
+      document.getElementById('expireDate').value = item.expire;
+    }
+    document.getElementById('editSort').value = item.sort || '';
+  } else {
+    document.getElementById('editQuestion').value = '';
+    document.getElementById('editAnswer').value = '';
+    editStatusOn = true;
+    addSimilarRow(); addSimilarRow();
+    document.querySelector('input[name="expireType"][value="permanent"]').checked = true;
+    document.getElementById('datePickerRow').style.display = 'none';
+    document.getElementById('expireDate').value = '';
+    document.getElementById('editSort').value = '';
+  }
+  updateCharCount('editQuestion','charQ',200);
+  updateCharCount('editAnswer','charA',5000);
+  updateEditStatusUI();
+  openModal('editModal');
+}
+
+function addSimilarRow(value) {
+  const list = document.getElementById('similarList');
+  if (list.children.length >= 10) { showToast('最多添加10条相似问题','info'); return; }
+  const row = document.createElement('div');
+  row.className = 'similar-row';
+  row.innerHTML = `<textarea placeholder="请输入相似问题">${value ? escHtml(value) : ''}</textarea><button class="similar-remove" onclick="this.parentElement.remove();updateAddSimilarBtn()">&times;</button>`;
+  list.appendChild(row);
+  updateAddSimilarBtn();
+}
+function updateAddSimilarBtn() {
+  const list = document.getElementById('similarList');
+  document.getElementById('addSimilarBtn').style.display = list.children.length >= 10 ? 'none' : 'inline-flex';
+}
+
+function updateCharCount(inputId, countId, max) {
+  const v = document.getElementById(inputId).value;
+  document.getElementById(countId).textContent = v.length;
+}
+
+function toggleDatePicker() {
+  const custom = document.querySelector('input[name="expireType"][value="custom"]').checked;
+  document.getElementById('datePickerRow').style.display = custom ? 'block' : 'none';
+}
+
+function toggleEditStatus() {
+  editStatusOn = !editStatusOn;
+  updateEditStatusUI();
+}
+function updateEditStatusUI() {
+  const track = document.getElementById('editStatusTrack');
+  const text = document.getElementById('editStatusText');
+  track.className = 'toggle-track' + (editStatusOn ? ' on' : '');
+  text.className = 'status-text ' + (editStatusOn ? 'on' : 'off');
+  text.textContent = editStatusOn ? '启用' : '禁用';
+}
+
+function wrapText(id, before, after) {
+  const el = document.getElementById(id);
+  const s = el.selectionStart, e = el.selectionEnd;
+  const v = el.value;
+  el.value = v.substring(0, s) + before + v.substring(s, e) + after + v.substring(e);
+  el.focus();
+  el.selectionStart = s + before.length;
+  el.selectionEnd = e + before.length;
+}
+function insertList(id) {
+  const el = document.getElementById(id);
+  const s = el.selectionStart;
+  const v = el.value;
+  el.value = v.substring(0, s) + '\n• ' + v.substring(s);
+  el.focus();
+}
+
+function saveQA() {
+  const q = document.getElementById('editQuestion').value.trim();
+  const a = document.getElementById('editAnswer').value.trim();
+  if (!q) { document.getElementById('editQuestion').classList.add('error'); showToast('请输入问题','error'); return; }
+  if (!a) { document.getElementById('editAnswer').classList.add('error'); showToast('请输入答案','error'); return; }
+  document.getElementById('editQuestion').classList.remove('error');
+  document.getElementById('editAnswer').classList.remove('error');
+  const similar = [];
+  document.querySelectorAll('#similarList textarea').forEach(t => { const v = t.value.trim(); if (v) similar.push(v); });
+  const isPermanent = document.querySelector('input[name="expireType"][value="permanent"]').checked;
+  const expire = isPermanent ? '永久有效' : (document.getElementById('expireDate').value || '永久有效');
+  const sort = parseInt(document.getElementById('editSort').value) || 0;
+  if (editingId) {
+    const item = qaData.find(x => x.id === editingId);
+    item.question = q; item.similar = similar; item.answer = a; item.expire = expire; item.status = editStatusOn ? 'on' : 'off'; item.sort = sort;
+  } else {
+    qaData.unshift({ id: nextId++, question: q, similar, answer: a, expire, status: editStatusOn ? 'on' : 'off', sort });
+  }
+  closeModal('editModal');
+  showToast('保存成功', 'success');
+  renderTable();
+}
+
+// Delete
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  deleteTargetIds = null;
+  document.getElementById('deleteMsg').textContent = '确定要删除这条QA吗？删除后不可恢复。';
+  openModal('deleteModal');
+}
+
+function batchDelete() {
+  if (selectedIds.size === 0) return;
+  deleteTargetIds = [...selectedIds];
+  deleteTargetId = null;
+  document.getElementById('deleteMsg').textContent = `确定要删除选中的 ${deleteTargetIds.length} 条QA吗？删除后不可恢复。`;
+  openModal('deleteModal');
+}
+
+function confirmDelete() {
+  if (deleteTargetId) { qaData = qaData.filter(x => x.id !== deleteTargetId); selectedIds.delete(deleteTargetId); }
+  if (deleteTargetIds) { qaData = qaData.filter(x => !deleteTargetIds.includes(x.id)); deleteTargetIds.forEach(id => selectedIds.delete(id)); }
+  closeModal('deleteModal');
+  showToast('删除成功', 'success');
+  renderTable();
+}
+
+// Import
+function openImportModal() {
+  importStep = 1;
+  renderImportStep();
+  openModal('importModal');
+}
+
+function renderImportStep() {
+  for (let i = 1; i <= 4; i++) document.getElementById('importStep' + i).style.display = i === importStep ? 'block' : 'none';
+  // Stepper
+  const labels = ['下载模板', '上传文件', '预览数据', '确认导入'];
+  const stepper = document.getElementById('importStepper');
+  stepper.innerHTML = '';
+  labels.forEach((label, idx) => {
+    const stepIdx = idx + 1;
+    const numClass = stepIdx < importStep ? 'step-num done' : stepIdx === importStep ? 'step-num active' : 'step-num';
+    const labelClass = stepIdx === importStep ? 'step-label active' : 'step-label';
+    const item = document.createElement('div');
+    item.className = 'step-item';
+    item.innerHTML = `<span class="${numClass}">${stepIdx < importStep ? '&#10003;' : stepIdx}</span><span class="${labelClass}">${label}</span>`;
+    stepper.appendChild(item);
+    if (idx < labels.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'step-line' + (stepIdx < importStep ? ' done' : '');
+      stepper.appendChild(line);
+    }
+  });
+  // Footer
+  const footer = document.getElementById('importFooter');
+  footer.innerHTML = '';
+  if (importStep === 1) {
+    footer.innerHTML = '<button class="btn btn-primary" onclick="importNext()">下一步</button>';
+  } else if (importStep === 2) {
+    footer.innerHTML = '<button class="btn" onclick="importPrev()">上一步</button><button class="btn btn-primary" onclick="importNext()">下一步</button>';
+  } else if (importStep === 3) {
+    footer.innerHTML = '<button class="btn" onclick="importPrev()">上一步</button><button class="btn btn-primary" onclick="importNext()">开始导入</button>';
+  } else {
+    footer.innerHTML = '<button class="btn btn-primary" onclick="closeImportModal()">关闭</button>';
+  }
+}
+
+function importNext() {
+  if (importStep < 4) { importStep++; renderImportStep(); }
+}
+function importPrev() {
+  if (importStep > 1) { importStep--; renderImportStep(); }
+}
+function closeImportModal() {
+  closeModal('importModal');
+  // Add mock imported rows
+  for (let i = 0; i < 24; i++) {
+    qaData.unshift({ id: nextId++, question: `导入问题 ${nextId - 1}`, similar: [], answer: `这是导入的答案内容 ${nextId - 1}，用于演示批量导入功能。`, expire: '永久有效', status: 'on', sort: 0 });
+  }
+  showToast('导入成功，已添加24条QA', 'success');
+  renderTable();
+}
+
+function onFileSelected(input) {
+  if (input.files.length > 0) {
+    document.getElementById('uploadFilename').textContent = input.files[0].name;
+  }
+}
+
+// Drag & drop
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const area = document.getElementById('uploadArea');
+    if (!area) return;
+    area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
+    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('drop', e => { e.preventDefault(); area.classList.remove('dragover'); if (e.dataTransfer.files.length) { document.getElementById('uploadFilename').textContent = e.dataTransfer.files[0].name; } });
+  });
+})();
+
+// Export
+function openExportModal() {
+  openModal('exportModal');
+}
+function doExport() {
+  closeModal('exportModal');
+  showToast('导出成功', 'success');
+}
+
+// Verify
+function openVerifyModal(id) {
+  verifyCurrentId = id;
+  document.getElementById('verifyInput').value = '';
+  document.getElementById('verifyResult').style.display = 'none';
+  document.getElementById('verifyLoading').style.display = 'none';
+  document.getElementById('verifyMarkBtn').disabled = true;
+  document.getElementById('verifyEditBtn').disabled = true;
+  openModal('verifyModal');
+}
+
+function runVerify() {
+  const input = document.getElementById('verifyInput').value.trim();
+  if (!input) { showToast('请输入测试问题', 'error'); return; }
+  document.getElementById('verifyLoading').style.display = 'block';
+  document.getElementById('verifyResult').style.display = 'none';
+  document.getElementById('verifyMarkBtn').disabled = true;
+  document.getElementById('verifyEditBtn').disabled = true;
+  setTimeout(() => {
+    document.getElementById('verifyLoading').style.display = 'none';
+    const item = qaData.find(x => x.id === verifyCurrentId);
+    const sim = Math.floor(Math.random() * 40) + 60; // 60-99
+    const simClass = sim > 80 ? 'green' : sim > 60 ? 'yellow' : 'red';
+    const pass = sim >= 70;
+    const resultHtml = `
+      <div class="verify-result">
+        <div class="verify-row"><span class="verify-label">命中QA</span><span class="verify-value" style="font-weight:500;">${escHtml(item.question)}</span></div>
+        <div class="verify-row"><span class="verify-label">相似度</span><span class="verify-value" style="display:flex;align-items:center;gap:10px;"><div class="sim-bar"><div class="sim-bar-fill ${simClass}" style="width:${sim}%"></div></div><span>${sim}%</span></span></div>
+        <div class="verify-row"><span class="verify-label">验证状态</span><span class="verify-badge ${pass?'pass':'fail'}">${pass?'通过':'未通过'}</span></div>
+        <div class="verify-row"><span class="verify-label">答案</span></div>
+        <div class="answer-box">${escHtml(item.answer)}</div>
+      </div>`;
+    document.getElementById('verifyResult').innerHTML = resultHtml;
+    document.getElementById('verifyResult').style.display = 'block';
+    document.getElementById('verifyMarkBtn').disabled = false;
+    document.getElementById('verifyEditBtn').disabled = false;
+  }, 1000);
+}
+
+// Toast
+function showToast(msg, type) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || 'info');
+  const icons = { success: '&#10003;', error: '&#10007;', info: '&#8505;' };
+  toast.innerHTML = `<span>${icons[type] || ''}</span> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; setTimeout(() => toast.remove(), 300); }, 2500);
+}
+
+// Close modal on overlay click & Escape
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+  }
+});
+
+// Init
+renderTable();
+</script>
+</body>
+</html>

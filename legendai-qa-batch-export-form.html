@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量导出QA - LegendAI</title>
+<style>
+:root {
+    --primary: #4F6EF7; --primary-dark: #3D5CE0; --accent: #00B8D9;
+    --accent2: #7C4DFF; --bg: #F7F8FA; --card-bg: #FFFFFF;
+    --text: #1A1D2B; --text-secondary: #6B7280; --border: #E2E8F0;
+    --card-radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(79,110,247,0.08);
+    --success: #22C55E;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px;
+}
+.card { max-width: 720px; width: 100%; background: var(--card-bg); border-radius: var(--card-radius); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 28px 32px 20px; border-bottom: 1px solid var(--border); }
+.card-header h1 { font-size: 20px; font-weight: 700; }
+.card-body { padding: 32px; }
+
+/* Form field group */
+.field-group { margin-bottom: 24px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-label { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.field-label .required { color: #EF4444; }
+.field-hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Radio group */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+.radio-item:hover { border-color: var(--primary); }
+.radio-item.selected { border-color: var(--primary); background: rgba(79,110,247,0.04); color: var(--primary); font-weight: 500; }
+.radio-item input[type="radio"] { display: none; }
+.radio-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.radio-item.selected .radio-dot { border-color: var(--primary); }
+.radio-item.selected .radio-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+
+/* Checkbox group */
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.checkbox-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+.checkbox-item:hover { border-color: var(--primary); }
+.checkbox-item.checked { border-color: var(--primary); background: rgba(79,110,247,0.04); color: var(--primary); font-weight: 500; }
+.checkbox-item input[type="checkbox"] { display: none; }
+.check-icon { width: 16px; height: 16px; border-radius: 4px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.checkbox-item.checked .check-icon { border-color: var(--primary); background: var(--primary); }
+.checkbox-item.checked .check-icon::after { content: ''; width: 5px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+
+/* Select */
+.select-wrap { position: relative; }
+.select-wrap select {
+    width: 100%; padding: 10px 36px 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--text); background: #fff; cursor: pointer;
+    appearance: none; transition: border-color 0.2s;
+}
+.select-wrap select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+.select-wrap::after { content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--text-secondary); pointer-events: none; }
+
+/* Buttons */
+.card-footer { padding: 20px 32px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.estimate-label { font-size: 13px; color: var(--text-secondary); }
+.estimate-label strong { color: var(--text); font-weight: 600; }
+.btn-group { display: flex; gap: 12px; }
+.btn { padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #F1F5F9; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Spinner */
+.spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+.btn-primary.loading .spinner { display: block; }
+.btn-primary.loading .btn-text { /* keep visible */ }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+    position: fixed; top: 24px; right: 24px; background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    display: flex; align-items: center; gap: 10px; font-size: 14px; z-index: 1000;
+    transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    border-left: 3px solid var(--success);
+}
+.toast.show { transform: translateX(0); }
+.toast svg { width: 20px; height: 20px; color: var(--success); flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="card-header">
+        <h1>批量导出QA</h1>
+    </div>
+    <div class="card-body">
+        <!-- 导出格式 -->
+        <div class="field-group">
+            <div class="field-label">导出格式</div>
+            <div class="radio-group" id="exportFormat">
+                <label class="radio-item selected" data-value="xlsx">
+                    <input type="radio" name="format" value="xlsx" checked>
+                    <span class="radio-dot"></span>
+                    Excel (.xlsx)
+                </label>
+                <label class="radio-item" data-value="csv">
+                    <input type="radio" name="format" value="csv">
+                    <span class="radio-dot"></span>
+                    CSV (.csv)
+                </label>
+                <label class="radio-item" data-value="json">
+                    <input type="radio" name="format" value="json">
+                    <span class="radio-dot"></span>
+                    JSON (.json)
+                </label>
+            </div>
+        </div>
+
+        <!-- 导出范围 -->
+        <div class="field-group">
+            <div class="field-label">导出范围</div>
+            <div class="radio-group" id="exportScope">
+                <label class="radio-item selected" data-value="all">
+                    <input type="radio" name="scope" value="all" checked>
+                    <span class="radio-dot"></span>
+                    全部数据
+                </label>
+                <label class="radio-item" data-value="enabled">
+                    <input type="radio" name="scope" value="enabled">
+                    <span class="radio-dot"></span>
+                    已启用
+                </label>
+                <label class="radio-item" data-value="disabled">
+                    <input type="radio" name="scope" value="disabled">
+                    <span class="radio-dot"></span>
+                    已禁用
+                </label>
+                <label class="radio-item" data-value="selected">
+                    <input type="radio" name="scope" value="selected">
+                    <span class="radio-dot"></span>
+                    勾选导出
+                </label>
+            </div>
+            <div class="field-hint" id="selectedHint" style="display:none;">需先在列表中勾选要导出的数据</div>
+        </div>
+
+        <!-- 导出字段 -->
+        <div class="field-group">
+            <div class="field-label">导出字段</div>
+            <div class="checkbox-group" id="exportFields">
+                <label class="checkbox-item checked" data-value="question">
+                    <input type="checkbox" name="field" value="question" checked>
+                    <span class="check-icon"></span>
+                    问题
+                </label>
+                <label class="checkbox-item checked" data-value="answer">
+                    <input type="checkbox" name="field" value="answer" checked>
+                    <span class="check-icon"></span>
+                    答案
+                </label>
+                <label class="checkbox-item checked" data-value="similar">
+                    <input type="checkbox" name="field" value="similar" checked>
+                    <span class="check-icon"></span>
+                    相似问题
+                </label>
+                <label class="checkbox-item checked" data-value="status">
+                    <input type="checkbox" name="field" value="status" checked>
+                    <span class="check-icon"></span>
+                    状态
+                </label>
+                <label class="checkbox-item checked" data-value="effective">
+                    <input type="checkbox" name="field" value="effective" checked>
+                    <span class="check-icon"></span>
+                    生效时间
+                </label>
+                <label class="checkbox-item checked" data-value="sort">
+                    <input type="checkbox" name="field" value="sort" checked>
+                    <span class="check-icon"></span>
+                    排序号
+                </label>
+            </div>
+        </div>
+
+        <!-- 文件编码 -->
+        <div class="field-group">
+            <div class="field-label">文件编码</div>
+            <div class="select-wrap">
+                <select id="encoding">
+                    <option value="utf8" selected>UTF-8</option>
+                    <option value="gbk">GBK</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="estimate-label">预估导出 <strong>1,247</strong> 条数据</div>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="handleCancel()">取消</button>
+            <button class="btn btn-primary" id="exportBtn" onclick="handleExport()">
+                <span class="spinner" id="exportSpinner"></span>
+                <span class="btn-text">导出</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span>文件已生成，开始下载</span>
+</div>
+
+<script>
+// Radio button clicks
+document.querySelectorAll('.radio-group').forEach(group => {
+    group.addEventListener('click', (e) => {
+        const item = e.target.closest('.radio-item');
+        if (!item) return;
+        group.querySelectorAll('.radio-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        item.querySelector('input').checked = true;
+
+        // Show hint for "selected" scope
+        if (group.id === 'exportScope') {
+            document.getElementById('selectedHint').style.display = item.dataset.value === 'selected' ? 'block' : 'none';
+        }
+    });
+});
+
+// Checkbox clicks
+document.querySelectorAll('.checkbox-group').forEach(group => {
+    group.addEventListener('click', (e) => {
+        const item = e.target.closest('.checkbox-item');
+        if (!item) return;
+        const cb = item.querySelector('input[type="checkbox"]');
+        cb.checked = !cb.checked;
+        item.classList.toggle('checked', cb.checked);
+    });
+});
+
+function handleCancel() {
+    alert('取消操作');
+}
+
+function handleExport() {
+    const btn = document.getElementById('exportBtn');
+    const textEl = btn.querySelector('.btn-text');
+
+    btn.classList.add('loading');
+    textEl.textContent = '正在生成...';
+    btn.disabled = true;
+
+    setTimeout(() => {
+        btn.classList.remove('loading');
+        textEl.textContent = '导出';
+        btn.disabled = false;
+
+        // Show toast
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }, 2000);
+}
+</script>
+</body>
+</html>
