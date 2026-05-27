@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识库 - 无数据空状态 | LegendAI</title>
+<style>
+:root {
+  --primary: #4F6EF7;
+  --primary-light: #EEF1FF;
+  --primary-hover: #3a56e0;
+  --bg: #f0f2f8;
+  --surface: #ffffff;
+  --sidebar-bg: #ffffff;
+  --border: #e8eaf0;
+  --text: #1a1d2e;
+  --text-secondary: #5a6080;
+  --text-muted: #9ba3c0;
+  --shadow: 0 1px 4px rgba(79,110,247,0.06);
+  --shadow-md: 0 4px 16px rgba(79,110,247,0.10);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: 0.18s ease;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Title bar */
+.titlebar {
+  height: 28px;
+  background: #2c3050;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  flex-shrink: 0;
+}
+
+/* App layout */
+.app-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  border: 2px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.3px;
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+.nav-group {
+  margin-bottom: 4px;
+}
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+.nav-group-header:hover { color: var(--primary); }
+.nav-group-header .nav-icon { font-size: 15px; opacity: 0.8; }
+.nav-group-header .chevron {
+  margin-left: auto;
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+.nav-group.open .chevron { transform: rotate(0deg); }
+.nav-group:not(.open) .chevron { transform: rotate(-90deg); }
+.nav-sub {
+  display: none;
+}
+.nav-group.open .nav-sub { display: block; }
+.nav-sub-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 20px 7px 44px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  border-left: 3px solid transparent;
+  margin-left: 0;
+}
+.nav-sub-item:hover { color: var(--primary); background: var(--primary-light); }
+.nav-sub-item.active {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-left-color: var(--primary);
+  font-weight: 500;
+}
+.nav-group-header.active { color: var(--primary); }
+
+/* Main content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Top header */
+.top-header {
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.hamburger {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.hamburger:hover { background: var(--bg); }
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.breadcrumb .crumb { color: var(--text-secondary); cursor: pointer; }
+.breadcrumb .crumb:hover { color: var(--primary); }
+.breadcrumb .sep { color: var(--text-muted); }
+.breadcrumb .current { color: var(--text); font-weight: 500; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.user-name {
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.user-name:hover { color: var(--primary); }
+.dropdown-icon { color: var(--text-muted); font-size: 11px; }
+
+/* Page body */
+.page-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+.card-header {
+  margin-bottom: 20px;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+  justify-content: space-between;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+.btn-primary:hover { background: var(--primary-hover); }
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  width: 220px;
+}
+.search-wrap input {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-icon { color: var(--text-muted); font-size: 14px; }
+
+/* Table */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-top: 16px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead tr {
+  background: #f7f8fc;
+}
+thead th {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fafbff; }
+tbody td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+/* ====================================
+   EMPTY STATE STYLES
+   ==================================== */
+.empty-state-row td {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+.empty-state-row:hover { background: none !important; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 20px;
+  text-align: center;
+}
+
+/* Illustration */
+.empty-illustration {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  position: relative;
+}
+.empty-illustration svg {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.empty-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 300px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.btn-empty-action {
+  background: var(--primary);
+  color: #fff;
+  padding: 9px 28px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(79,110,247,0.25);
+}
+.btn-empty-action:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 18px rgba(79,110,247,0.30);
+  transform: translateY(-1px);
+}
+
+/* Pagination area - still shown in empty state for consistency */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pagination-bar.empty { opacity: 0.4; pointer-events: none; }
+.page-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  opacity: 0.5;
+}
+.page-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  opacity: 1;
+}
+.page-size-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  outline: none;
+  color: var(--text-secondary);
+  background: var(--surface);
+  opacity: 0.5;
+}
+
+/* Toggle buttons for demo */
+.demo-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  gap: 8px;
+  z-index: 999;
+}
+.demo-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+}
+.demo-btn.empty-mode {
+  background: var(--primary);
+  color: #fff;
+}
+.demo-btn.data-mode {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.demo-btn:hover { opacity: 0.85; }
+.demo-label {
+  position: fixed;
+  bottom: 64px;
+  right: 24px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.9);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<!-- Title bar -->
+<div class="titlebar">数据处理</div>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">L</div>
+      <span class="logo-text">LegendAI</span>
+    </div>
+    <nav class="sidebar-nav">
+      <!-- 智能体知识库管理 -->
+      <div class="nav-group open">
+        <div class="nav-group-header active">
+          <span class="nav-icon">📚</span>
+          <span>智能体知识库管理</span>
+          <span class="chevron">▾</span>
+        </div>
+        <div class="nav-sub">
+          <div class="nav-sub-item active">• 数据处理</div>
+          <div class="nav-sub-item">版本管理</div>
+          <div class="nav-sub-item">知识对话测试</div>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-header">
+          <span class="nav-icon">🖥</span>
+          <span>智能体配置中心</span>
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-header">
+          <span class="nav-icon">📊</span>
+          <span>智能体数据运营</span>
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-header">
+          <span class="nav-icon">🌐</span>
+          <span>场景广场</span>
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-header">
+          <span class="nav-icon">🛡</span>
+          <span>平台管理</span>
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="hamburger">☰</button>
+      <div class="breadcrumb">
+        <span class="crumb">LegendAI</span>
+        <span class="sep">›</span>
+        <span class="current">数据处理</span>
+      </div>
+      <div class="header-right">
+        <div class="user-avatar">管</div>
+        <span class="user-name">管理员账号</span>
+        <span class="dropdown-icon">▾</span>
+      </div>
+    </header>
+
+    <!-- Page body -->
+    <div class="page-body">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">知识库</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" onclick="showCreateModal()">＋ 新建知识库</button>
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索知识库" oninput="handleSearch(this.value)">
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px">ID</th>
+                <th>知识库名称</th>
+                <th>知识库描述</th>
+                <th>更新时间</th>
+                <th>创建时间</th>
+                <th style="width:160px;text-align:center">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Empty state injected here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-bar empty" id="pagination">
+          <span>共 0 条，第 1/1 页</span>
+          <span>每页</span>
+          <select class="page-size-select">
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+          </select>
+          <span>条</span>
+          <button class="page-btn">‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Toggle -->
+<div class="demo-label">演示切换模式</div>
+<div class="demo-toggle">
+  <button class="demo-btn data-mode" onclick="showWithData()">有数据</button>
+  <button class="demo-btn empty-mode" onclick="showEmpty()">空状态</button>
+</div>
+
+<!-- Create Modal -->
+<div id="createModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:2000;display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:480px;box-shadow:0 16px 48px rgba(0,0,0,0.15);">
+    <div style="padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:15px;font-weight:700;">新建知识库</span>
+      <button onclick="hideCreateModal()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9ba3c0;">✕</button>
+    </div>
+    <div style="padding:24px;">
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;font-weight:600;color:#5a6080;display:block;margin-bottom:6px;">知识库名称 <span style="color:#f04;">*</span></label>
+        <input type="text" style="width:100%;padding:9px 12px;border:1px solid #e8eaf0;border-radius:8px;font-size:13px;outline:none;" placeholder="请输入知识库名称" id="kbName">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#5a6080;display:block;margin-bottom:6px;">知识库描述</label>
+        <textarea style="width:100%;padding:9px 12px;border:1px solid #e8eaf0;border-radius:8px;font-size:13px;outline:none;resize:none;height:80px;font-family:inherit;" placeholder="请输入描述（可选）" id="kbDesc"></textarea>
+      </div>
+    </div>
+    <div style="padding:0 24px 24px;display:flex;justify-content:flex-end;gap:10px;">
+      <button onclick="hideCreateModal()" style="padding:8px 20px;border:1px solid #e8eaf0;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:#5a6080;">取消</button>
+      <button onclick="createKb()" style="padding:8px 24px;border:none;border-radius:8px;background:#4F6EF7;color:#fff;font-size:13px;cursor:pointer;font-weight:500;">确认创建</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Mock data
+const mockData = [
+  { id: '03', name: '前海e站通', desc: '', updated: '2024-05-10 12:12', created: '2024-05-10 12:12' },
+  { id: '02', name: '数智空间', desc: '', updated: '2024-05-10 12:12', created: '2024-05-10 12:12' },
+  { id: '01', name: '前海大脑', desc: '知识总库', updated: '2024-05-10 12:12', created: '2024-05-10 12:12' },
+];
+let isEmptyMode = true;
+
+// Empty state SVG illustration
+function getEmptyIllustration() {
+  return `
+    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background circle -->
+      <circle cx="60" cy="60" r="50" fill="#EEF1FF" opacity="0.6"/>
+      <!-- Document stack -->
+      <rect x="32" y="35" width="42" height="52" rx="5" fill="#c8d0f8" opacity="0.5"/>
+      <rect x="36" y="30" width="42" height="52" rx="5" fill="#d8dffb" opacity="0.7"/>
+      <rect x="40" y="25" width="42" height="52" rx="5" fill="#ffffff" stroke="#c0caff" stroke-width="1.5"/>
+      <!-- Lines on doc -->
+      <rect x="48" y="36" width="22" height="3" rx="1.5" fill="#c0caff"/>
+      <rect x="48" y="43" width="28" height="2.5" rx="1.25" fill="#dde2fc"/>
+      <rect x="48" y="49" width="24" height="2.5" rx="1.25" fill="#dde2fc"/>
+      <rect x="48" y="55" width="20" height="2.5" rx="1.25" fill="#dde2fc"/>
+      <!-- Plus badge -->
+      <circle cx="85" cy="35" r="13" fill="#4F6EF7"/>
+      <rect x="84" y="29" width="2" height="12" rx="1" fill="white"/>
+      <rect x="79" y="34" width="12" height="2" rx="1" fill="white"/>
+    </svg>
+  `;
+}
+
+function renderEmpty() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = `
+    <tr class="empty-state-row">
+      <td colspan="6">
+        <div class="empty-state">
+          <div class="empty-illustration">${getEmptyIllustration()}</div>
+          <div class="empty-title">暂无知识库</div>
+          <div class="empty-desc">您还没有创建任何知识库。<br>知识库是智能体的知识来源，创建后可导入文档、FAQ等内容。</div>
+          <button class="btn-empty-action" onclick="showCreateModal()">
+            <span>＋</span> 新建知识库
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
+  document.getElementById('pagination').classList.add('empty');
+}
+
+function renderWithData() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = mockData.map(row => `
+    <tr>
+      <td>${row.id}</td>
+      <td style="font-weight:500;">${row.name}</td>
+      <td style="color:#9ba3c0;">${row.desc || '—'}</td>
+      <td>${row.updated}</td>
+      <td>${row.created}</td>
+      <td style="text-align:center;">
+        <button onclick="alert('查看详情 - ${row.name}')" style="background:#e8f7f0;color:#00b365;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:6px;">查看详情</button>
+        <button onclick="alert('编辑 - ${row.name}')" style="background:none;color:#4F6EF7;border:none;font-size:12px;cursor:pointer;margin-right:6px;">编辑</button>
+        <button onclick="confirmDelete('${row.name}')" style="background:none;color:#f04040;border:none;font-size:12px;cursor:pointer;">删除</button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('pagination').classList.remove('empty');
+  document.getElementById('pagination').innerHTML = `
+    <span>共 ${mockData.length} 条，第 1/1 页</span>
+    <span>每页</span>
+    <select class="page-size-select">
+      <option>10</option><option>20</option><option>50</option>
+    </select>
+    <span>条</span>
+    <button class="page-btn">‹</button>
+    <button class="page-btn active">1</button>
+    <button class="page-btn">›</button>
+  `;
+}
+
+function showEmpty() {
+  isEmptyMode = true;
+  renderEmpty();
+  document.querySelector('.demo-btn.empty-mode').style.background = '#4F6EF7';
+  document.querySelector('.demo-btn.empty-mode').style.color = '#fff';
+  document.querySelector('.demo-btn.data-mode').style.background = '#fff';
+  document.querySelector('.demo-btn.data-mode').style.color = '#5a6080';
+}
+
+function showWithData() {
+  isEmptyMode = false;
+  renderWithData();
+  document.querySelector('.demo-btn.data-mode').style.background = '#4F6EF7';
+  document.querySelector('.demo-btn.data-mode').style.color = '#fff';
+  document.querySelector('.demo-btn.empty-mode').style.background = '#fff';
+  document.querySelector('.demo-btn.empty-mode').style.color = '#5a6080';
+}
+
+function handleSearch(val) {
+  if (isEmptyMode) return;
+  const filtered = mockData.filter(r => r.name.includes(val) || r.desc.includes(val));
+  const tbody = document.getElementById('tableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr class="empty-state-row">
+        <td colspan="6">
+          <div class="empty-state">
+            <div class="empty-illustration">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="60" r="50" fill="#EEF1FF" opacity="0.5"/>
+                <circle cx="55" cy="50" r="18" stroke="#c0caff" stroke-width="3" fill="none"/>
+                <line x1="67" y1="62" x2="82" y2="77" stroke="#c0caff" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="55" cy="50" r="10" fill="#dde2fc" opacity="0.6"/>
+              </svg>
+            </div>
+            <div class="empty-title">未找到相关知识库</div>
+            <div class="empty-desc">没有匹配"${val}"的知识库，<br>请尝试其他关键词或清空搜索。</div>
+          </div>
+        </td>
+      </tr>
+    `;
+  } else {
+    tbody.innerHTML = filtered.map(row => `
+      <tr>
+        <td>${row.id}</td>
+        <td style="font-weight:500;">${row.name}</td>
+        <td style="color:#9ba3c0;">${row.desc || '—'}</td>
+        <td>${row.updated}</td>
+        <td>${row.created}</td>
+        <td style="text-align:center;">
+          <button style="background:#e8f7f0;color:#00b365;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:6px;">查看详情</button>
+          <button style="background:none;color:#4F6EF7;border:none;font-size:12px;cursor:pointer;margin-right:6px;">编辑</button>
+          <button style="background:none;color:#f04040;border:none;font-size:12px;cursor:pointer;">删除</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function showCreateModal() {
+  document.getElementById('createModal').style.display = 'flex';
+}
+function hideCreateModal() {
+  document.getElementById('createModal').style.display = 'none';
+}
+function createKb() {
+  const name = document.getElementById('kbName').value.trim();
+  if (!name) { alert('请输入知识库名称'); return; }
+  hideCreateModal();
+  // Add to mock data and switch to data view
+  const newId = String(mockData.length + 1).padStart(2, '0');
+  const now = new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(/\//g, '-');
+  mockData.unshift({ id: newId, name: name, desc: document.getElementById('kbDesc').value, updated: now, created: now });
+  document.getElementById('kbName').value = '';
+  document.getElementById('kbDesc').value = '';
+  showWithData();
+}
+function confirmDelete(name) {
+  if (confirm(`确定要删除知识库「${name}」吗？此操作不可恢复。`)) {
+    const idx = mockData.findIndex(r => r.name === name);
+    if (idx !== -1) mockData.splice(idx, 1);
+    if (mockData.length === 0) showEmpty();
+    else renderWithData();
+  }
+}
+
+// Nav toggle
+document.querySelectorAll('.nav-group-header').forEach(h => {
+  h.addEventListener('click', () => {
+    const group = h.closest('.nav-group');
+    group.classList.toggle('open');
+  });
+});
+
+// Init: show empty state
+renderEmpty();
+</script>
+
+</body>
+</html>
